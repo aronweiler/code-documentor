@@ -31,55 +31,71 @@ Examples:
   # Utility commands
   python main.py analyze "C:\\path\\to\\repo"
   python main.py validate-config
-        """
+        """,
     )
 
     # Create subparsers for different commands
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
     # Main documentation generation command (default)
-    doc_parser = subparsers.add_parser('generate', help='Generate documentation (default)')
+    doc_parser = subparsers.add_parser(
+        "generate", help="Generate documentation (default)"
+    )
     doc_parser.add_argument(
-        '--repo-path', 
-        type=str, 
+        "--repo-path",
+        type=str,
         required=True,
-        help='Path to the code repository to document'
+        help="Path to the code repository to document",
     )
     doc_parser.add_argument(
-        '--docs-path', 
-        type=str, 
-        help='Path to existing documentation (used as context)'
+        "--docs-path", type=str, help="Path to existing documentation (used as context)"
     )
     doc_parser.add_argument(
-        '--output-path', 
-        type=str, 
-        help='Where to save generated documentation (default: repo-path/documentation_output)'
+        "--output-path",
+        type=str,
+        help="Where to save generated documentation (default: repo-path/documentation_output)",
     )
     doc_parser.add_argument(
-        '--config', 
-        type=str, 
-        default='config.yaml',
-        help='Path to configuration file (default: config.yaml)'
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Path to configuration file (default: config.yaml)",
     )
     doc_parser.add_argument(
-        '--design-docs', 
-        action='store_true',
-        help='Generate design documentation in addition to code documentation'
+        "--design-docs",
+        action="store_true",
+        help="Generate design documentation in addition to code documentation",
     )
     doc_parser.add_argument(
-        '--verbose', '-v', 
-        action='store_true',
-        help='Enable verbose output'
+        "--design-docs-only",
+        action="store_true",
+        help="Generate only design documentation (requires existing individual documentation)",
+    )
+    doc_parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
 
     # Analyze command
-    analyze_parser = subparsers.add_parser('analyze', help='Analyze repository structure')
-    analyze_parser.add_argument('repo_path', type=str, help='Path to repository to analyze')
-    analyze_parser.add_argument('--config', type=str, default='config.yaml', help='Configuration file')
+    analyze_parser = subparsers.add_parser(
+        "analyze", help="Analyze repository structure"
+    )
+    analyze_parser.add_argument(
+        "repo_path", type=str, help="Path to repository to analyze"
+    )
+    analyze_parser.add_argument(
+        "--config", type=str, default="config.yaml", help="Configuration file"
+    )
 
     # Validate config command
-    validate_parser = subparsers.add_parser('validate-config', help='Validate configuration')
-    validate_parser.add_argument('--config', type=str, default='config.yaml', help='Configuration file to validate')
+    validate_parser = subparsers.add_parser(
+        "validate-config", help="Validate configuration"
+    )
+    validate_parser.add_argument(
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Configuration file to validate",
+    )
 
     # If no command is specified, treat arguments as generate command
     args = parser.parse_args()
@@ -87,49 +103,54 @@ Examples:
     # Handle case where no subcommand is used (backward compatibility)
     if args.command is None:
         # Re-parse with generate command arguments
-        parser = argparse.ArgumentParser(description="Generate comprehensive documentation for code repositories")
+        parser = argparse.ArgumentParser(
+            description="Generate comprehensive documentation for code repositories"
+        )
         parser.add_argument(
-            '--repo-path', 
-            type=str, 
+            "--repo-path",
+            type=str,
             required=True,
-            help='Path to the code repository to document'
+            help="Path to the code repository to document",
         )
         parser.add_argument(
-            '--docs-path', 
-            type=str, 
-            help='Path to existing documentation (used as context)'
+            "--docs-path",
+            type=str,
+            help="Path to existing documentation (used as context)",
         )
         parser.add_argument(
-            '--output-path', 
-            type=str, 
-            help='Where to save generated documentation (default: repo-path/documentation_output)'
+            "--output-path",
+            type=str,
+            help="Where to save generated documentation (default: repo-path/documentation_output)",
         )
         parser.add_argument(
-            '--config', 
-            type=str, 
-            default='config.yaml',
-            help='Path to configuration file (default: config.yaml)'
+            "--config",
+            type=str,
+            default="config.yaml",
+            help="Path to configuration file (default: config.yaml)",
         )
         parser.add_argument(
-            '--design-docs', 
-            action='store_true',
-            help='Generate design documentation in addition to code documentation'
+            "--design-docs",
+            action="store_true",
+            help="Generate design documentation in addition to code documentation",
         )
         parser.add_argument(
-            '--verbose', '-v', 
-            action='store_true',
-            help='Enable verbose output'
+            "--design-docs-only",
+            action="store_true",
+            help="Generate only design documentation (requires existing individual documentation)",
+        )
+        parser.add_argument(
+            "--verbose", "-v", action="store_true", help="Enable verbose output"
         )
 
         args = parser.parse_args()
-        args.command = 'generate'
+        args.command = "generate"
 
     try:
-        if args.command == 'generate':
+        if args.command == "generate":
             run_documentation_generation(args)
-        elif args.command == 'analyze':
+        elif args.command == "analyze":
             run_repository_analysis(args)
-        elif args.command == 'validate-config':
+        elif args.command == "validate-config":
             run_config_validation(args)
         else:
             parser.print_help()
@@ -139,14 +160,20 @@ Examples:
         sys.exit(1)
     except Exception as e:
         print(f"❌ Error: {e}")
-        if hasattr(args, 'verbose') and args.verbose:
+        if hasattr(args, "verbose") and args.verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
 
 def run_documentation_generation(args):
     """Run the main documentation generation pipeline."""
+
+    # Validate design-docs-only flag
+    if args.design_docs_only and not args.design_docs:
+        raise ValueError("--design-docs-only requires --design-docs flag")
+
     print("🚀 Starting Documentation Pipeline")
     print("=" * 50)
 
@@ -168,8 +195,11 @@ def run_documentation_generation(args):
     # Initialize pipeline
     print(f"📁 Repository: {repo_path}")
     print(f"📚 Existing docs: {docs_path if docs_path else 'None'}")
-    print(f"📤 Output: {output_path if output_path else repo_path / 'documentation_output'}")
+    print(
+        f"📤 Output: {output_path if output_path else repo_path / 'documentation_output'}"
+    )
     print(f"🎨 Design docs: {'Yes' if args.design_docs else 'No'}")
+    print(f"🎯 Design docs only: {'Yes' if args.design_docs_only else 'No'}")
     print(f"⚙️  Config: {args.config}")
     print()
 
@@ -180,23 +210,51 @@ def run_documentation_generation(args):
             repo_path=repo_path,
             docs_path=docs_path,
             output_path=output_path,
-            generate_design_docs=args.design_docs
+            generate_design_docs=args.design_docs,
+            design_docs_only=args.design_docs_only,
         )
 
         # Print summary
-        successful = len([r for r in final_state.results if r.success and r.documentation != "[SKIPPED - No changes detected]"])
-        skipped = len([r for r in final_state.results if r.success and r.documentation == "[SKIPPED - No changes detected]"])
+        successful = len(
+            [
+                r
+                for r in final_state.results
+                if r.success and r.documentation != "[SKIPPED - No changes detected]"
+            ]
+        )
+        skipped = len(
+            [
+                r
+                for r in final_state.results
+                if r.success and r.documentation == "[SKIPPED - No changes detected]"
+            ]
+        )
         failed = len([r for r in final_state.results if not r.success])
 
         print("\n" + "=" * 50)
         print("✅ Documentation Pipeline Completed!")
         print(f"📊 Results: {successful} generated, {skipped} skipped, {failed} failed")
 
-        if args.design_docs and hasattr(final_state, 'documentation_guide') and final_state.documentation_guide:
-            print(f"📋 Documentation guide created with {final_state.documentation_guide.total_files} entries")
+        if (
+            args.design_docs
+            and hasattr(final_state, "documentation_guide")
+            and final_state.documentation_guide
+        ):
+            print(
+                f"📋 Documentation guide created with {final_state.documentation_guide.total_files} entries"
+            )
+
+        if args.design_docs_only:
+            print("🎯 Design documentation generated from existing files")
+        elif args.design_docs:
+            print("📝 Individual + design documentation completed")
+        else:
+            print("📝 Individual documentation completed")
 
         if failed > 0:
-            print("⚠️  Some files failed to process. Check the documentation report for details.")
+            print(
+                "⚠️  Some files failed to process. Check the documentation report for details."
+            )
 
     except Exception as e:
         print(f"❌ Pipeline failed: {e}")
@@ -228,24 +286,24 @@ def run_repository_analysis(args):
         print()
 
         print("📋 Files by extension:")
-        for ext, count in sorted(structure['by_extension'].items()):
+        for ext, count in sorted(structure["by_extension"].items()):
             print(f"  {ext or '(no extension)'}: {count} files")
         print()
 
         print("📂 Files by directory:")
-        for directory, count in sorted(structure['by_directory'].items()):
+        for directory, count in sorted(structure["by_directory"].items()):
             print(f"  {directory}: {count} files")
         print()
 
         print("📏 Largest files:")
-        for file_path, size in structure['largest_files'][:10]:
+        for file_path, size in structure["largest_files"][:10]:
             print(f"  {file_path}: {size:,} characters")
 
         # Check processing limits
         max_files = config.processing.get("max_files")
         if max_files and max_files > 0:
             print(f"\n⚙️  Processing limit: {max_files} files (configured maximum)")
-            if structure['total_files'] > max_files:
+            if structure["total_files"] > max_files:
                 print(f"   Only the first {max_files} files would be processed")
 
     except Exception as e:
@@ -276,7 +334,9 @@ def run_config_validation(args):
         # Test API key
         try:
             api_key = config_manager.get_api_key(provider)
-            masked_key = api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
+            masked_key = (
+                api_key[:8] + "..." + api_key[-4:] if len(api_key) > 12 else "***"
+            )
             print(f"🔑 API Key: {masked_key} ✅")
         except Exception as e:
             print(f"🔑 API Key: ❌ {e}")

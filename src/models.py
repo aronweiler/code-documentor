@@ -12,7 +12,7 @@ class PipelineConfig(BaseModel):
     processing: Dict[str, Any] = Field(default_factory=dict)
     output: Dict[str, Any] = Field(default_factory=dict)
     templates: Dict[str, str] = Field(default_factory=dict)
-    design_docs: Dict[str, Any] = Field(default_factory=dict)  # New section
+    design_docs: Dict[str, Any] = Field(default_factory=dict)  
 
 
 class DocumentationRequest(BaseModel):
@@ -22,7 +22,8 @@ class DocumentationRequest(BaseModel):
     docs_path: Optional[Path] = None
     output_path: Path
     config: PipelineConfig
-    generate_design_docs: bool = False  # New flag
+    generate_design_docs: bool = False
+    design_docs_only: bool = False  
 
 
 class CodeFile(BaseModel):
@@ -77,4 +78,4 @@ class PipelineState(BaseModel):
     results: List[DocumentationResult] = Field(default_factory=list)
     current_file_index: int = 0
     completed: bool = False
-    documentation_guide: Optional[DocumentationGuide] = None  # New field
+    documentation_guide: Optional[DocumentationGuide] = None  
