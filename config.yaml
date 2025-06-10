@@ -1,0 +1,72 @@
+# Configuration file for the documentation pipeline
+
+# AI Model Configuration
+model:
+  provider: "openai"  # Options: openai, anthropic, azure_openai
+  name: "gpt-4o"  # Model name
+  temperature: 0.2
+  max_tokens: 4096
+
+# Token Management
+token_limits:
+  max_context_tokens: 50000  # Maximum tokens for existing documentation context
+  summarization_threshold: 50000  # Threshold to trigger summarization
+  chunk_size: 10000  # Size of chunks for processing large documents
+
+# File Processing
+file_processing:
+  supported_extensions:
+    - .py
+    - .js
+    - .ts
+    - .java
+    - .cpp
+    - .c
+    - .cs
+    - .go
+    - .rs
+    - .php
+    - .rb
+    - .swift
+    - .kt
+  exclude_patterns:
+    - "__pycache__"
+    - "node_modules"
+    - ".git"
+    - "*.pyc"
+    - "*.log"
+    - "dist"
+    - "build"
+    - "venv"
+    - ".venv"
+    - "external"
+    - "mcp_tools"
+    - "run_tests.py"
+    - "__init__.py"
+    - "setup_dev_environment.py"
+
+# Output Configuration
+output:
+  format: "markdown"  # Output format
+  include_code: false  # Include original code in output
+  side_by_side: true  # Generate side-by-side documentation
+  
+# Documentation Templates
+templates:
+  file_documentation: |
+    # Documentation for {filename}
+    
+    ## Purpose
+    {purpose}
+    
+    ## Functionality
+    {functionality}
+    
+    ## Key Components
+    {components}
+    
+    ## Dependencies
+    {dependencies}
+    
+    ## Usage Examples
+    {usage_examples}
