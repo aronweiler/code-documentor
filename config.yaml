@@ -12,11 +12,17 @@ token_limits:
   max_context_tokens: 50000  # Maximum tokens for existing documentation context
   summarization_threshold: 50000  # Threshold to trigger summarization
   chunk_size: 10000  # Size of chunks for processing large documents
-  
+
 # Configuration File for Documentation Pipeline
 processing:
   max_files: 100             # Maximum number of files to process (null/0 for no limit)
   save_incrementally: true   # Save each file as it's processed (recommended)
+
+# Documentation Generation
+design_docs:
+  enabled: true
+  summary_max_length: 500  # Maximum length for file summaries
+  guide_format: "markdown"  # Format for the documentation guide
 
 # File Processing
 file_processing:

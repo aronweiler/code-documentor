@@ -242,7 +242,7 @@ You can run the pipeline multiple times with different configurations:
 
 ```powershell
 # Generate with GPT-4o
-python main.py --repo-path "C:\repo" --config config-gpt4.yaml
+python main.py --repo-path "C:\repo" --config config-gpt4o.yaml
 
 # Generate with Claude
 python main.py --repo-path "C:\repo" --config config-claude.yaml

@@ -69,6 +69,9 @@ class DocumentationPipeline:
         workflow.add_node("summarize_docs", self.summarize_docs)
         workflow.add_node("scan_repository", self.scan_repository)
         workflow.add_node("generate_documentation", self.generate_documentation)
+        workflow.add_node(
+            "generate_design_docs", self.generate_design_documentation
+        )  # New node
         workflow.add_node("save_results", self.save_results)
 
         # Add edges
@@ -83,8 +86,12 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "generate_documentation",
             self.has_more_files,
-            {"continue": "generate_documentation", "finish": "save_results"},
+            {
+                "continue": "generate_documentation",
+                "finish": "generate_design_docs",
+            },  # Updated
         )
+        workflow.add_edge("generate_design_docs", "save_results")  # New edge
         workflow.add_edge("save_results", END)
 
         return workflow.compile()
@@ -169,7 +176,9 @@ Keep the summary concise but comprehensive."""
 
         return {"code_files": code_files, "current_file_index": 0}
 
-    def save_single_result(self, state: PipelineState, result: DocumentationResult) -> None:
+    def save_single_result(
+        self, state: PipelineState, result: DocumentationResult
+    ) -> None:
         """Save documentation for a single file immediately."""
         if not result.success:
             return
@@ -197,8 +206,12 @@ Keep the summary concise but comprehensive."""
         with open(doc_path, "w", encoding="utf-8") as f:
             # Header notice
             f.write("<!-- AUTO-GENERATED DOCUMENTATION -->\n")
-            f.write("<!-- This file was automatically generated and should not be manually edited -->\n")
-            f.write("<!-- To update this documentation, regenerate it using the documentation pipeline -->\n\n")
+            f.write(
+                "<!-- This file was automatically generated and should not be manually edited -->\n"
+            )
+            f.write(
+                "<!-- To update this documentation, regenerate it using the documentation pipeline -->\n\n"
+            )
 
             # Original title and LLM-generated content
             f.write(f"# Documentation for {relative_path}\n\n")
@@ -498,6 +511,202 @@ Relative path: {current_file.relative_path}"""
 
         return {"results": new_results, "current_file_index": new_index}
 
+    def _generate_documentation_guide(self, state: PipelineState) -> DocumentationGuide:
+        """Generate a documentation guide from the created documentation files."""
+        print("Generating documentation guide...")
+
+        guide_entries = []
+        output_path = state.request.output_path
+
+        # Process each successful documentation result
+        successful_results = [
+            r
+            for r in state.results
+            if r.success and r.documentation != "[SKIPPED - No changes detected]"
+        ]
+
+        for result in successful_results:
+            # Calculate paths
+            relative_source_path = result.file_path.relative_to(state.request.repo_path)
+            doc_filename = f"{relative_source_path.stem}_documentation.md"
+            doc_relative_path = relative_source_path.parent / doc_filename
+
+            # Read the generated documentation to create a summary
+            doc_full_path = output_path / doc_relative_path
+
+            if doc_full_path.exists():
+                try:
+                    with open(doc_full_path, "r", encoding="utf-8") as f:
+                        doc_content = f.read()
+
+                    # Extract just the LLM-generated content (skip header comments and metadata)
+                    # Find content between the title and either "## Original Code" or the metadata
+                    import re
+
+                    # Remove header comments
+                    content_start = doc_content.find("# Documentation for")
+                    if content_start == -1:
+                        content_start = 0
+
+                    clean_content = doc_content[content_start:]
+
+                    # Remove original code section and metadata
+                    original_code_pattern = r"\n## Original Code\n.*"
+                    clean_content = re.sub(
+                        original_code_pattern, "", clean_content, flags=re.DOTALL
+                    )
+
+                    metadata_pattern = r"\n---\n<!-- GENERATION METADATA -->.*"
+                    clean_content = re.sub(
+                        metadata_pattern, "", clean_content, flags=re.DOTALL
+                    )
+
+                    # Generate summary using LLM
+                    summary = self._generate_doc_summary(
+                        clean_content, str(relative_source_path)
+                    )
+
+                    guide_entry = DocumentationGuideEntry(
+                        doc_file_path=str(doc_relative_path),
+                        summary=summary,
+                        original_file_path=str(relative_source_path),
+                    )
+                    guide_entries.append(guide_entry)
+
+                except Exception as e:
+                    print(
+                        f"Warning: Could not process documentation file {doc_full_path}: {e}"
+                    )
+                    # Create a basic entry even if we can't read the file
+                    guide_entry = DocumentationGuideEntry(
+                        doc_file_path=str(doc_relative_path),
+                        summary=f"Documentation for {relative_source_path} (summary unavailable)",
+                        original_file_path=str(relative_source_path),
+                    )
+                    guide_entries.append(guide_entry)
+
+        # Create the documentation guide
+        guide = DocumentationGuide(
+            entries=guide_entries,
+            total_files=len(guide_entries),
+            generation_date=datetime.now().isoformat(),
+        )
+
+        print(f"Generated documentation guide with {len(guide_entries)} entries")
+        return guide
+
+    def _generate_doc_summary(self, doc_content: str, file_path: str) -> str:
+        """Generate a concise summary of documentation content using LLM."""
+
+        summary_prompt = ChatPromptTemplate.from_messages(
+            [
+                SystemMessage(
+                    content="""You are a technical documentation summarizer. Create a concise 1-2 sentence summary of the provided documentation that captures:
+1. The primary purpose/function of the code
+2. Key components or functionality
+
+Keep the summary brief but informative enough for an AI to determine if this documentation is relevant for a specific task.
+Focus on WHAT the code does, not HOW it's documented."""
+                ),
+                HumanMessage(
+                    content=f"Summarize this documentation for file '{file_path}':\n\n{doc_content[:2000]}..."  # Limit content to avoid token limits
+                ),
+            ]
+        )
+
+        try:
+            messages = summary_prompt.format_messages()
+            response = self.llm.invoke(messages)
+
+            if hasattr(response, "content"):
+                summary = response.content.strip()
+            else:
+                summary = str(response).strip()
+
+            # Ensure summary is reasonable length
+            if len(summary) > 200:
+                summary = summary[:197] + "..."
+
+            return summary
+
+        except Exception as e:
+            print(f"Warning: Could not generate summary for {file_path}: {e}")
+            # Fallback to a basic summary
+            return f"Documentation for {file_path}"
+
+    def _save_documentation_guide(
+        self, state: PipelineState, guide: DocumentationGuide
+    ) -> None:
+        """Save the documentation guide to a file."""
+
+        output_path = state.request.output_path
+        guide_path = output_path / "documentation_guide.md"
+
+        # Create the guide content
+        guide_content = f"""# Documentation Guide
+
+<!-- AUTO-GENERATED DOCUMENTATION GUIDE -->
+<!-- This file was automatically generated and should not be manually edited -->
+
+This guide provides an overview of all generated documentation files in this repository.
+Use this guide to quickly locate relevant documentation when working on specific features or components.
+
+**Generated on:** {guide.generation_date}  
+**Total documented files:** {guide.total_files}
+
+## Documentation Files
+
+"""
+
+        # Add each entry
+        for entry in guide.entries:
+            guide_content += f"### {entry.original_file_path}\n\n"
+            guide_content += f"**Documentation:** `{entry.doc_file_path}`\n\n"
+            guide_content += f"**Summary:** {entry.summary}\n\n"
+            guide_content += "---\n\n"
+
+        # Add machine-readable section
+        guide_content += """
+## Machine-Readable Index
+
+```yaml
+# Documentation Guide Metadata
+entries:
+"""
+
+        for entry in guide.entries:
+            guide_content += f'  - doc_file: "{entry.doc_file_path}"\n'
+            guide_content += f'    source_file: "{entry.original_file_path}"\n'
+            guide_content += f"    summary: \"{entry.summary.replace('\"', '\\\"')}\"\n"
+
+        guide_content += f"total_files: {guide.total_files}\n"
+        guide_content += f'generation_date: "{guide.generation_date}"\n'
+        guide_content += "```\n"
+
+        # Save the guide
+        with open(guide_path, "w", encoding="utf-8") as f:
+            f.write(guide_content)
+
+        print(f"✓ Documentation guide saved: {guide_path}")
+
+    def generate_design_documentation(self, state: PipelineState) -> Dict[str, Any]:
+        """Generate design documentation from the individual file documentation."""
+        if not state.request.generate_design_docs:
+            return {"completed": True}
+
+        print("Starting design documentation generation...")
+
+        # Generate documentation guide
+        guide = self._generate_documentation_guide(state)
+
+        # Save the documentation guide
+        self._save_documentation_guide(state, guide)
+
+        # TODO: Add additional design documentation steps here
+        # This is where you would add more sophisticated design doc generation
+
+        return {"documentation_guide": guide, "completed": True}
+
     def save_results(self, state: PipelineState) -> Dict[str, Any]:
         """Save the summary report and handle any remaining non-incremental saves."""
         print(f"Finalizing documentation in: {state.request.output_path}")
@@ -531,8 +740,16 @@ Relative path: {current_file.relative_path}"""
 
     def _generate_summary_report(self, state: PipelineState):
         """Generate a summary report of the documentation process."""
-        successful = [r for r in state.results if r.success and r.documentation != "[SKIPPED - No changes detected]"]
-        skipped = [r for r in state.results if r.success and r.documentation == "[SKIPPED - No changes detected]"]
+        successful = [
+            r
+            for r in state.results
+            if r.success and r.documentation != "[SKIPPED - No changes detected]"
+        ]
+        skipped = [
+            r
+            for r in state.results
+            if r.success and r.documentation == "[SKIPPED - No changes detected]"
+        ]
         failed = [r for r in state.results if not r.success]
 
         report_content = f"""# Documentation Generation Report
@@ -573,10 +790,14 @@ Relative path: {current_file.relative_path}"""
 
         # Add processing configuration info
         max_files = state.request.config.processing.get("max_files")
-        save_incrementally = state.request.config.processing.get("save_incrementally", True)
+        save_incrementally = state.request.config.processing.get(
+            "save_incrementally", True
+        )
 
         report_content += f"\n## Processing Configuration\n"
-        report_content += f"- **Max files limit**: {max_files if max_files else 'No limit'}\n"
+        report_content += (
+            f"- **Max files limit**: {max_files if max_files else 'No limit'}\n"
+        )
         report_content += f"- **Incremental saving**: {save_incrementally}\n"
 
         # Save report
@@ -604,6 +825,7 @@ Relative path: {current_file.relative_path}"""
         repo_path: Path,
         docs_path: Optional[Path] = None,
         output_path: Optional[Path] = None,
+        generate_design_docs: bool = False,  # New parameter
     ) -> PipelineState:
         """Run the complete documentation pipeline."""
 
@@ -615,6 +837,7 @@ Relative path: {current_file.relative_path}"""
             docs_path=docs_path,
             output_path=output_path,
             config=self.config,
+            generate_design_docs=generate_design_docs,  # New field
         )
 
         # Create initial state with empty existing_docs
@@ -625,9 +848,6 @@ Relative path: {current_file.relative_path}"""
         initial_state = PipelineState(request=request, existing_docs=initial_docs)
 
         pipeline = self.create_pipeline()
-        final_state = pipeline.invoke(
-            initial_state,
-            config={"recursion_limit": self.config.processing.get("max_files", 1000)},
-        )
+        final_state = pipeline.invoke(initial_state)
 
         return final_state
