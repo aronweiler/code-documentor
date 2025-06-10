@@ -12,6 +12,7 @@ from pathlib import Path
 
 from .models import (
     DocumentationGuide,
+    DocumentationGuideEntry,
     PipelineState,
     DocumentationContext,
     DocumentationResult,
@@ -171,7 +172,9 @@ class DocumentationPipeline:
 
         # Add nodes
         workflow.add_node("load_existing_docs", self.load_existing_docs)
-        workflow.add_node("load_existing_documentation", self.load_existing_documentation)
+        workflow.add_node(
+            "load_existing_documentation", self.load_existing_documentation
+        )
         workflow.add_node("summarize_docs", self.summarize_docs)
         workflow.add_node("scan_repository", self.scan_repository)
         workflow.add_node("generate_documentation", self.generate_documentation)
@@ -187,8 +190,8 @@ class DocumentationPipeline:
             self.should_load_existing_docs,
             {
                 "load_existing": "load_existing_documentation",
-                "continue": "check_summarization"  # We'll handle summarization separately
-            }
+                "continue": "check_summarization",  # We'll handle summarization separately
+            },
         )
 
         # Add a separate node for summarization check
@@ -196,7 +199,7 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "check_summarization",
             self.should_summarize,
-            {"summarize": "summarize_docs", "continue": "scan_repository"}
+            {"summarize": "summarize_docs", "continue": "scan_repository"},
         )
 
         workflow.add_edge("summarize_docs", "scan_repository")
@@ -204,7 +207,7 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "generate_documentation",
             self.has_more_files,
-            {"continue": "generate_documentation", "finish": "generate_design_docs"}
+            {"continue": "generate_documentation", "finish": "generate_design_docs"},
         )
 
         # Design-docs-only path
@@ -366,8 +369,6 @@ Keep the summary concise but comprehensive."""
 
         print(f"  ✓ Saved documentation: {doc_path}")
 
-    
-
     def has_more_files(self, state: PipelineState) -> str:
         """Check if there are more files to process."""
         if state.current_file_index >= len(state.code_files):
@@ -471,7 +472,9 @@ Keep the summary concise but comprehensive."""
         total_files = len(state.code_files)
         current_index = state.current_file_index + 1
 
-        print(f"Processing file: {current_file.relative_path} ({current_index}/{total_files})")
+        print(
+            f"Processing file: {current_file.relative_path} ({current_index}/{total_files})"
+        )
 
         # Check if we should generate documentation for this file
         if not self._should_generate_documentation(state, current_file):
@@ -480,7 +483,7 @@ Keep the summary concise but comprehensive."""
                 file_path=current_file.path,
                 documentation="[SKIPPED - No changes detected]",
                 success=True,
-                error_message=None
+                error_message=None,
             )
 
             # Update results and move to next file
@@ -534,7 +537,9 @@ Relative path: {current_file.relative_path}"""
             )
 
             # Save immediately if incremental saving is enabled
-            save_incrementally = state.request.config.processing.get("save_incrementally", True)
+            save_incrementally = state.request.config.processing.get(
+                "save_incrementally", True
+            )
             if save_incrementally:
                 self.save_single_result(state, result)
 
@@ -545,9 +550,7 @@ Relative path: {current_file.relative_path}"""
                 success=False,
                 error_message=str(e),
             )
-            print(
-                f"  → Error generating documentation: {e}"
-            )
+            print(f"  → Error generating documentation: {e}")
 
         # Update results and move to next file
         new_results = state.results + [result]
@@ -645,7 +648,7 @@ Relative path: {current_file.relative_path}"""
         summary_prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(
-                    content="""You are a technical documentation summarizer. Create a concise 1-2 sentence summary of the provided documentation that captures:
+                    content="""You are a technical documentation summarizer. Create a concise 2-4 sentence summary of the provided documentation that captures:
 1. The primary purpose/function of the code
 2. Key components or functionality
 
@@ -653,7 +656,7 @@ Keep the summary brief but informative enough for an AI to determine if this doc
 Focus on WHAT the code does, not HOW it's documented."""
                 ),
                 HumanMessage(
-                    content=f"Summarize this documentation for file '{file_path}':\n\n{doc_content[:2000]}..."  # Limit content to avoid token limits
+                    content=f"Summarize this documentation for file '{file_path}':\n\n{doc_content}..."
                 ),
             ]
         )
@@ -666,10 +669,6 @@ Focus on WHAT the code does, not HOW it's documented."""
                 summary = response.content.strip()
             else:
                 summary = str(response).strip()
-
-            # Ensure summary is reasonable length
-            if len(summary) > 200:
-                summary = summary[:197] + "..."
 
             return summary
 
@@ -708,24 +707,6 @@ Use this guide to quickly locate relevant documentation when working on specific
             guide_content += f"**Documentation:** `{entry.doc_file_path}`\n\n"
             guide_content += f"**Summary:** {entry.summary}\n\n"
             guide_content += "---\n\n"
-
-        # Add machine-readable section
-        guide_content += """
-## Machine-Readable Index
-
-```yaml
-# Documentation Guide Metadata
-entries:
-"""
-
-        for entry in guide.entries:
-            guide_content += f'  - doc_file: "{entry.doc_file_path}"\n'
-            guide_content += f'    source_file: "{entry.original_file_path}"\n'
-            guide_content += f"    summary: \"{entry.summary.replace('\"', '\\\"')}\"\n"
-
-        guide_content += f"total_files: {guide.total_files}\n"
-        guide_content += f'generation_date: "{guide.generation_date}"\n'
-        guide_content += "```\n"
 
         # Save the guide
         with open(guide_path, "w", encoding="utf-8") as f:
@@ -889,7 +870,7 @@ entries:
             output_path=output_path,
             config=self.config,
             generate_design_docs=generate_design_docs,
-            design_docs_only=design_docs_only,  # New field
+            design_docs_only=design_docs_only,
         )
 
         # Create initial state with empty existing_docs
