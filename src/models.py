@@ -5,17 +5,18 @@ from pathlib import Path
 
 class PipelineConfig(BaseModel):
     """Configuration model for the documentation pipeline."""
-    
+
     model: Dict[str, Any] = Field(default_factory=dict)
     token_limits: Dict[str, int] = Field(default_factory=dict)
     file_processing: Dict[str, Any] = Field(default_factory=dict)
+    processing: Dict[str, Any] = Field(default_factory=dict)  # New section
     output: Dict[str, Any] = Field(default_factory=dict)
     templates: Dict[str, str] = Field(default_factory=dict)
 
 
 class DocumentationRequest(BaseModel):
     """Request model for documentation generation."""
-    
+
     repo_path: Path
     docs_path: Optional[Path] = None
     output_path: Path
@@ -24,7 +25,7 @@ class DocumentationRequest(BaseModel):
 
 class CodeFile(BaseModel):
     """Model representing a code file to be documented."""
-    
+
     path: Path
     content: str
     extension: str
@@ -33,7 +34,7 @@ class CodeFile(BaseModel):
 
 class DocumentationContext(BaseModel):
     """Model representing the existing documentation context."""
-    
+
     content: str
     token_count: int
     summarized: bool = False
@@ -42,7 +43,7 @@ class DocumentationContext(BaseModel):
 
 class DocumentationResult(BaseModel):
     """Model representing the generated documentation for a file."""
-    
+
     file_path: Path
     documentation: str
     success: bool
@@ -51,7 +52,7 @@ class DocumentationResult(BaseModel):
 
 class PipelineState(BaseModel):
     """State model for the LangGraph pipeline."""
-    
+
     request: DocumentationRequest
     existing_docs: DocumentationContext
     code_files: List[CodeFile] = Field(default_factory=list)
