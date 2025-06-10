@@ -61,7 +61,7 @@ def main(repo_path: Path, docs_path: Path, output_path: Path, config: str, verbo
         
         if verbose:
             click.echo("✅ Configuration loaded successfully")
-            click.echo(f"🤖 Model: {pipeline_config.model.get('provider', 'openai')} - {pipeline_config.model.get('name', 'gpt-4')}")
+            click.echo(f"🤖 Model: {pipeline_config.model.get('provider', 'openai')} - {pipeline_config.model.get('name', 'gpt-4o')}")
         
         # Initialize pipeline
         pipeline = DocumentationPipeline(config)
@@ -117,7 +117,7 @@ def validate_config(config: str):
         pipeline_config = config_manager.load_config()
         
         click.echo("✅ Configuration file is valid")
-        click.echo(f"🤖 Model: {pipeline_config.model.get('provider', 'openai')} - {pipeline_config.model.get('name', 'gpt-4')}")
+        click.echo(f"🤖 Model: {pipeline_config.model.get('provider', 'openai')} - {pipeline_config.model.get('name', 'gpt-4o')}")
         click.echo(f"🎯 Max context tokens: {pipeline_config.token_limits.get('max_context_tokens', 8000)}")
         click.echo(f"📄 Supported extensions: {len(pipeline_config.file_processing.get('supported_extensions', []))}")
         

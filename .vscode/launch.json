@@ -12,9 +12,9 @@
       "console": "integratedTerminal",
         "args": [
             "--repo-path",
-            "<target repository path>",
+            "H:\\repos\\rad-sec-analysis",
             "--docs-path",
-            "<existing documents path>",
+            "H:\\repos\\rad-sec-analysis\\docs",
         ],
     },
     {

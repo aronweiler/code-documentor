@@ -73,7 +73,7 @@ Edit `config.yaml` to customize the pipeline:
 ```yaml
 model:
   provider: "openai"  # openai, anthropic, azure_openai
-  name: "gpt-4"       # Model name
+  name: "gpt-4o"       # Model name
   temperature: 0.2    # Creativity level (0.0-1.0)
   max_tokens: 4000    # Maximum response length
 ```
@@ -241,7 +241,7 @@ templates:
 You can run the pipeline multiple times with different configurations:
 
 ```powershell
-# Generate with GPT-4
+# Generate with GPT-4o
 python main.py --repo-path "C:\repo" --config config-gpt4.yaml
 
 # Generate with Claude

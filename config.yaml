@@ -39,11 +39,8 @@ file_processing:
     - "build"
     - "venv"
     - ".venv"
-    - "external"
-    - "mcp_tools"
-    - "run_tests.py"
+    - "*_tests.py"
     - "__init__.py"
-    - "setup_dev_environment.py"
 
 # Output Configuration
 output:
