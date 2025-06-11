@@ -6,6 +6,7 @@ from pathlib import Path
 class PipelineConfig(BaseModel):
     """Configuration model for the documentation pipeline."""
 
+    logging: Dict[str, Any] = Field(default_factory=dict)
     model: Dict[str, Any] = Field(default_factory=dict)
     token_limits: Dict[str, int] = Field(default_factory=dict)
     file_processing: Dict[str, Any] = Field(default_factory=dict)

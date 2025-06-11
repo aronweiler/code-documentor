@@ -4,6 +4,14 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
+from .prompts.continue_truncated_content_system_prompt import (
+    CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT,
+)
+from .prompts.section_prompt_system_message import SECTION_PROMPT_SYSTEM_MESSAGE
+
+from .tools.lc_tools.lc_file_tools import create_file_tools
+
+
 from .models import (
     PipelineState,
     DesignDocument,
@@ -11,7 +19,12 @@ from .models import (
     DesignDocumentationState,
     DocumentationContext,
 )
-from .tools import read_file_content, list_files_in_directory, find_files_by_pattern, get_file_info
+from .tools import (
+    read_file_content,
+    list_files_in_directory,
+    find_files_by_pattern,
+    get_file_info,
+)
 
 
 class DesignDocumentGenerator:
@@ -43,14 +56,16 @@ class DesignDocumentGenerator:
                         name=section_config["name"],
                         enabled=section_config["enabled"],
                         max_tokens=section_config["max_tokens"],
-                        template=section_config["template"]
+                        template=section_config["template"],
                     )
                     sections.append(section)
 
             if sections:  # Only add document if it has enabled sections
                 document = DesignDocument(name=doc_name, sections=sections)
                 documents.append(document)
-                print(f"Enabled document type: {doc_name} with {len(sections)} sections")
+                print(
+                    f"Enabled document type: {doc_name} with {len(sections)} sections"
+                )
             else:
                 print(f"Skipping document type {doc_name}: no enabled sections")
 
@@ -58,7 +73,7 @@ class DesignDocumentGenerator:
             documents=documents,
             current_document_index=0,
             current_section_index=0,
-            accumulated_context=""
+            accumulated_context="",
         )
 
         print(f"Initialized {len(documents)} design documents for generation")
@@ -67,13 +82,17 @@ class DesignDocumentGenerator:
     def generate_design_section(self, state: PipelineState) -> Dict[str, Any]:
         """Generate a single section of a design document."""
         design_state = state.design_documentation_state
-        if not design_state or design_state.current_document_index >= len(design_state.documents):
+        if not design_state or design_state.current_document_index >= len(
+            design_state.documents
+        ):
             return {"design_documentation_state": design_state}
 
         current_doc = design_state.documents[design_state.current_document_index]
         current_section = current_doc.sections[design_state.current_section_index]
 
-        print(f"Generating section '{current_section.name}' for document '{current_doc.name}'...")
+        print(
+            f"Generating section '{current_section.name}' for document '{current_doc.name}'..."
+        )
 
         # Prepare context for section generation
         context = self._prepare_section_context(state, current_doc, current_section)
@@ -92,8 +111,12 @@ class DesignDocumentGenerator:
 
         return {"design_documentation_state": design_state}
 
-    def _prepare_section_context(self, state: PipelineState, document: DesignDocument, 
-                                section: DesignDocumentSection) -> str:
+    def _prepare_section_context(
+        self,
+        state: PipelineState,
+        document: DesignDocument,
+        section: DesignDocumentSection,
+    ) -> str:
         """Prepare context for section generation including previous sections and documents."""
         context_parts = []
 
@@ -121,22 +144,29 @@ class DesignDocumentGenerator:
 
         return "\n\n".join(context_parts)
 
-    def _generate_section_content(self, state: PipelineState, document: DesignDocument,
-                                 section: DesignDocumentSection, context: str) -> str:
+    def _generate_section_content(
+        self,
+        state: PipelineState,
+        document: DesignDocument,
+        section: DesignDocumentSection,
+        context: str,
+    ) -> str:
         """Generate content for a specific section with retry logic."""
-        retry_config = self.config.get("retry_config", {})
-        max_retries = retry_config.get("max_retries", 3)
+        max_retries = self.config.design_docs.get("retry_count", 3)
 
         for attempt in range(max_retries + 1):
             try:
                 # Create tools for the AI to use
-                tools = self._create_file_tools(state.request.repo_path)
+                tools = self._create_langchain_tools(state.request.repo_path)
+
+                # Bind tools to the LLM
+                llm_with_tools = self.llm.bind_tools(tools)
 
                 # Create the generation prompt
-                prompt = self._create_section_prompt(document, section, context, tools)
+                prompt = self._create_section_prompt(document, section, context)
 
                 # Generate content
-                response = self.llm.invoke(prompt, max_tokens=section.max_tokens)
+                response = llm_with_tools.invoke(prompt, max_tokens=section.max_tokens)
 
                 if hasattr(response, "content"):
                     content = response.content
@@ -145,8 +175,11 @@ class DesignDocumentGenerator:
 
                 # Check if content was truncated
                 if self._is_content_truncated(content, section.max_tokens):
+                    retry_config = self.config.design_docs.get("retry", {})
                     if retry_config.get("retry_on_truncation", True):
-                        print(f"  → Content truncated, retrying with continuation (attempt {attempt + 1})")
+                        print(
+                            f"  → Content truncated, retrying with continuation (attempt {attempt + 1})"
+                        )
                         content = self._continue_truncated_content(
                             content, document, section, context, tools, retry_config
                         )
@@ -165,41 +198,26 @@ class DesignDocumentGenerator:
 
         return "[GENERATION FAILED: Maximum retries exceeded]"
 
-    def _create_file_tools(self, repo_path: Path) -> str:
-        """Create tool descriptions for the AI to use."""
-        return f"""
-You have access to the following tools to read files from the repository at {repo_path}:
+    def _create_langchain_tools(self, repo_path: Path):
+        """Create LangChain tools for the AI to use."""
+        return create_file_tools(repo_path)
 
-1. read_file_content(file_path) - Read the content of any file in the repository
-2. list_files_in_directory(directory_path, extensions=None, recursive=True) - List files in a directory
-3. find_files_by_pattern(pattern, directory=None) - Find files matching a pattern
-4. get_file_info(file_path) - Get information about a file
-
-Use these tools to gather relevant information for generating the documentation section.
-All file paths should be relative to the repository root.
-"""
-
-    def _create_section_prompt(self, document: DesignDocument, section: DesignDocumentSection,
-                              context: str, tools: str) -> List:
+    def _create_section_prompt(
+        self, document: DesignDocument, section: DesignDocumentSection, context: str
+    ) -> List:
         """Create the prompt for section generation."""
-        system_message = f"""You are a technical documentation generator creating a section for a design document.
-
-{tools}
-
-Document: {document.name}
-Section: {section.name}
-
-Context from existing documentation and previous sections:
-{context}
-
-Instructions for this section:
-{section.template}
-
-Generate comprehensive, well-structured content for this section. Use the available tools to read relevant files from the repository to inform your documentation. Focus on accuracy and completeness while staying within the token limit."""
+        system_message = SECTION_PROMPT_SYSTEM_MESSAGE.format(
+            document_name=document.name,
+            section_name=section.name,
+            section_template=section.template,
+            context=context,
+        )
 
         return [
             SystemMessage(content=system_message),
-            HumanMessage(content=f"Generate the '{section.name}' section for the {document.name} document.")
+            HumanMessage(
+                content=f"Generate the '{section.name}' section for the {document.name} document."
+            ),
         ]
 
     def _is_content_truncated(self, content: str, max_tokens: int) -> bool:
@@ -212,43 +230,55 @@ Generate comprehensive, well-structured content for this section. Use the availa
             return True
 
         last_char = content[-1]
-        if last_char not in '.!?':
+        if last_char not in ".!?":
             return True
 
         # Check token count (approximate)
         estimated_tokens = len(content.split()) * 1.3  # Rough estimation
-        if estimated_tokens >= max_tokens * 0.95:  # If using 95% of tokens, likely truncated
+        if (
+            estimated_tokens >= max_tokens * 0.95
+        ):  # If using 95% of tokens, likely truncated
             return True
 
         return False
 
-    def _continue_truncated_content(self, partial_content: str, document: DesignDocument,
-                                   section: DesignDocumentSection, context: str, tools: str,
-                                   retry_config: Dict) -> str:
+    def _continue_truncated_content(
+        self,
+        partial_content: str,
+        document: DesignDocument,
+        section: DesignDocumentSection,
+        context: str,
+        tools,
+        retry_config: Dict,
+    ) -> str:
         """Continue generation from truncated content."""
-        continuation_prompt_template = retry_config.get("continuation_prompt", 
-            "The previous generation was truncated. Please continue exactly where it left off: {previous_content}")
+        continuation_prompt_template = retry_config.get(
+            "continuation_prompt",
+            "The previous generation was truncated. Please continue exactly where it left off: {previous_content}",
+        )
 
-        continuation_prompt = continuation_prompt_template.format(previous_content=partial_content)
+        continuation_prompt = continuation_prompt_template.format(
+            previous_content=partial_content
+        )
 
-        system_message = f"""You are continuing a truncated documentation section.
-
-{tools}
-
-Original section instructions:
-{section.template}
-
-{continuation_prompt}
-
-Please continue from where the previous content left off and complete the section."""
+        # Include full context in the continuation system message
+        system_message = CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT.format(
+            document_name=document.name,
+            section_name=section.name,
+            context=context,
+            section_template=section.template,
+            continuation_prompt=continuation_prompt,
+        )
 
         prompt = [
             SystemMessage(content=system_message),
-            HumanMessage(content="Continue and complete the section.")
+            HumanMessage(content="Continue and complete the section."),
         ]
 
         try:
-            response = self.llm.invoke(prompt, max_tokens=section.max_tokens // 2)
+            # Bind tools to LLM for continuation as well
+            llm_with_tools = self.llm.bind_tools(tools)
+            response = llm_with_tools.invoke(prompt, max_tokens=section.max_tokens // 2)
 
             if hasattr(response, "content"):
                 continuation = response.content
@@ -276,7 +306,9 @@ Please continue from where the previous content left off and complete the sectio
                 sections_content.append(section.content)
             elif not section.success:
                 sections_content.append(f"## {section.name.replace('_', ' ').title()}")
-                sections_content.append(f"[Section generation failed: {section.error_message}]")
+                sections_content.append(
+                    f"[Section generation failed: {section.error_message}]"
+                )
 
         # Use AI to assemble and ensure coherence
         assembled_content = self._ai_assemble_document(current_doc, sections_content)
@@ -285,7 +317,9 @@ Please continue from where the previous content left off and complete the sectio
         self._save_design_document(state, current_doc, assembled_content)
 
         # Add to accumulated context for next documents
-        design_state.accumulated_context += f"\n\n## {current_doc.name}\n{assembled_content}"
+        design_state.accumulated_context += (
+            f"\n\n## {current_doc.name}\n{assembled_content}"
+        )
         design_state.completed_documents.append(current_doc.name)
 
         # Move to next document
@@ -297,12 +331,16 @@ Please continue from where the previous content left off and complete the sectio
 
         return {"design_documentation_state": design_state}
 
-    def _ai_assemble_document(self, document: DesignDocument, sections_content: List[str]) -> str:
+    def _ai_assemble_document(
+        self, document: DesignDocument, sections_content: List[str]
+    ) -> str:
         """Use AI to assemble sections into a coherent document."""
         combined_sections = "\n\n".join(sections_content)
 
-        assembly_prompt = ChatPromptTemplate.from_messages([
-            SystemMessage(content=f"""You are assembling a {document.name} document from individual sections.
+        assembly_prompt = ChatPromptTemplate.from_messages(
+            [
+                SystemMessage(
+                    content=f"""You are assembling a {document.name} document from individual sections.
 
 Your task is to:
 1. Create a coherent document title and introduction
@@ -311,9 +349,13 @@ Your task is to:
 4. Maintain consistency in tone and style
 5. Add a conclusion if appropriate
 
-The document should read as a unified whole, not just concatenated sections."""),
-            HumanMessage(content=f"Assemble this {document.name} document from these sections:\n\n{combined_sections}")
-        ])
+The document should read as a unified whole, not just concatenated sections."""
+                ),
+                HumanMessage(
+                    content=f"Assemble this {document.name} document from these sections:\n\n{combined_sections}"
+                ),
+            ]
+        )
 
         try:
             response = self.llm.invoke(assembly_prompt.format_messages())
@@ -326,10 +368,12 @@ The document should read as a unified whole, not just concatenated sections.""")
         except Exception as e:
             print(f"  → Error assembling document, using basic concatenation: {e}")
             # Fallback to basic assembly
-            title = document.name.replace('_', ' ').title()
+            title = document.name.replace("_", " ").title()
             return f"# {title}\n\n{combined_sections}"
 
-    def _save_design_document(self, state: PipelineState, document: DesignDocument, content: str):
+    def _save_design_document(
+        self, state: PipelineState, document: DesignDocument, content: str
+    ):
         """Save a design document to file."""
         design_docs_path = state.request.output_path / "design_documentation"
         design_docs_path.mkdir(parents=True, exist_ok=True)
