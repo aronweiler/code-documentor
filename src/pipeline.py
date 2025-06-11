@@ -1053,12 +1053,19 @@ Use this guide to quickly locate relevant documentation when working on specific
         if not design_state:
             return
 
+        # Get total configured document types for comparison
+        design_config = self.config.design_docs.get("documents", {})
+        total_configured = len(design_config)
+        enabled_configured = len([doc for doc in design_config.values() if doc.get("enabled", True)])
+        disabled_configured = total_configured - enabled_configured
+
         successful_docs = len([doc for doc in design_state.documents if doc.success])
         failed_docs = len([doc for doc in design_state.documents if not doc.success])
         total_docs = len(design_state.documents)
 
         print(f"\n🎨 Design Documentation Status:")
-        print(f"   ✓ {successful_docs}/{total_docs} documents generated successfully")
+        print(f"   📋 {total_configured} document types configured, {enabled_configured} enabled, {disabled_configured} disabled")
+        print(f"   ✓ {successful_docs}/{total_docs} enabled documents generated successfully")
 
         if failed_docs > 0:
             print(f"   ✗ {failed_docs} documents failed")
@@ -1161,14 +1168,29 @@ Use this guide to quickly locate relevant documentation when working on specific
         if not design_state:
             return ""
 
+        # Get configuration info
+        design_config = self.config.design_docs.get("documents", {})
+        total_configured = len(design_config)
+        enabled_configured = len([doc for doc in design_config.values() if doc.get("enabled", True)])
+        disabled_configured = total_configured - enabled_configured
+
         report_section = "\n## Design Documentation\n"
 
         successful_docs = [doc for doc in design_state.documents if doc.success]
         failed_docs = [doc for doc in design_state.documents if not doc.success]
 
-        report_section += f"- **Total design documents**: {len(design_state.documents)}\n"
+        report_section += f"- **Total document types configured**: {total_configured}\n"
+        report_section += f"- **Enabled document types**: {enabled_configured}\n"
+        report_section += f"- **Disabled document types**: {disabled_configured}\n"
         report_section += f"- **Successfully generated**: {len(successful_docs)}\n"
         report_section += f"- **Failed**: {len(failed_docs)}\n"
+
+        # List disabled document types
+        if disabled_configured > 0:
+            disabled_docs = [name for name, config in design_config.items() if not config.get("enabled", True)]
+            report_section += f"\n### Disabled Document Types\n"
+            for doc_name in disabled_docs:
+                report_section += f"- {doc_name}\n"
 
         if successful_docs:
             report_section += "\n### Successfully Generated Design Documents\n"

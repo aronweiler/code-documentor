@@ -85,7 +85,7 @@ design_docs:
       sections:
         - name: "executive_summary"
           enabled: true
-          max_tokens: 500
+          max_tokens: 5000
           template: |
             Generate an executive summary for this project. Include:
             - Project purpose and goals
@@ -97,7 +97,7 @@ design_docs:
 
         - name: "project_scope"
           enabled: true
-          max_tokens: 800
+          max_tokens: 8000
           template: |
             Define the project scope including:
             - What is included in the project
@@ -108,6 +108,7 @@ design_docs:
             Base this on the codebase structure and existing documentation.
 
     architecture:
+      enabled: false
       sections:
         - name: "system_overview"
           enabled: true
@@ -130,6 +131,7 @@ design_docs:
             - Integration points
 
     design:
+      enabled: false
       sections:
         - name: "design_principles"
           enabled: true
@@ -151,6 +153,7 @@ design_docs:
             - Security considerations
 
     user_guide:
+      enabled: false
       sections:
         - name: "getting_started"
           enabled: true
@@ -173,6 +176,7 @@ design_docs:
             - Best practices
 
     developer_guide:
+      enabled: false
       sections:
         - name: "development_setup"
           enabled: true
@@ -195,6 +199,7 @@ design_docs:
             - Development best practices
 
     api_documentation:
+      enabled: false
       sections:
         - name: "api_overview"
           enabled: true
@@ -217,6 +222,7 @@ design_docs:
             - Error codes and handling
 
     module_documentation:
+      enabled: false
       sections:
         - name: "module_overview"
           enabled: true
@@ -239,6 +245,7 @@ design_docs:
             - Usage examples
 
     testing_documentation:
+      enabled: false
       sections:
         - name: "testing_strategy"
           enabled: true
@@ -261,6 +268,7 @@ design_docs:
             - Manual testing procedures
 
     deployment_documentation:
+      enabled: false
       sections:
         - name: "deployment_overview"
           enabled: true

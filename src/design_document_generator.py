@@ -30,6 +30,11 @@ class DesignDocumentGenerator:
         documents = []
 
         for doc_name, doc_config in design_config.items():
+            # Check if the document type is enabled
+            if not doc_config.get("enabled", True):
+                print(f"Skipping disabled document type: {doc_name}")
+                continue
+
             sections = []
 
             for section_config in doc_config.get("sections", []):
@@ -45,6 +50,9 @@ class DesignDocumentGenerator:
             if sections:  # Only add document if it has enabled sections
                 document = DesignDocument(name=doc_name, sections=sections)
                 documents.append(document)
+                print(f"Enabled document type: {doc_name} with {len(sections)} sections")
+            else:
+                print(f"Skipping document type {doc_name}: no enabled sections")
 
         design_state = DesignDocumentationState(
             documents=documents,
