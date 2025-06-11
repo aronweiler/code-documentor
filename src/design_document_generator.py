@@ -4,6 +4,8 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
+from .prompts.ai_assembly_system_message import AI_ASSEMBLY_SYSTEM_MESSAGE
+
 from .utilities.token_manager import TokenCounter
 
 from .prompts.continue_truncated_content_system_prompt import (
@@ -354,16 +356,9 @@ class DesignDocumentGenerator:
         assembly_prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(
-                    content=f"""You are assembling a {document.name} document from individual sections.
-
-Your task is to:
-1. Create a coherent document title and introduction
-2. Ensure smooth transitions between sections
-3. Add any necessary connecting text
-4. Maintain consistency in tone and style
-5. Add a conclusion if appropriate
-
-The document should read as a unified whole, not just concatenated sections."""
+                    content=AI_ASSEMBLY_SYSTEM_MESSAGE.format(
+                        document_name=document.name
+                    )
                 ),
                 HumanMessage(
                     content=f"Assemble this {document.name} document from these sections:\n\n{combined_sections}"

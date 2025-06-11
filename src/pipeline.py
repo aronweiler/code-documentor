@@ -6,6 +6,10 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from pathlib import Path
 
+from .prompts.generate_file_documentation_system_message import (
+    GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE,
+)
+
 from .guide_generator import GuideGenerator
 from .design_document_generator import DesignDocumentGenerator
 from .file_processor import FileProcessor
@@ -288,21 +292,11 @@ class DocumentationPipeline:
             doc_prompt = ChatPromptTemplate.from_messages(
                 [
                     SystemMessage(
-                        content=f"""You are a technical documentation generator. Create comprehensive documentation for the provided code file.
-
-Use this existing project documentation as context:
-{context}
-
-Generate documentation that includes:
-1. **Purpose**: What this file does and why it exists
-2. **Functionality**: Detailed explanation of the main functions/classes
-3. **Key Components**: Important classes, functions, variables, or modules
-4. **Dependencies**: What this file depends on and what depends on it
-5. **Usage Examples**: How this code would typically be used
-
-Format the output as clean Markdown. Be thorough but concise.
-File extension: {current_file.extension}
-Relative path: {current_file.relative_path}"""
+                        content=GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE.format(
+                            context=context,
+                            current_file_extension=current_file.extension or "text",
+                            current_file_relative_path=current_file.relative_path,
+                        )
                     ),
                     HumanMessage(
                         content=f"Document this code file:\n\n```{current_file.extension[1:] if current_file.extension else 'text'}\n{current_file.content}\n```"

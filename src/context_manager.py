@@ -3,6 +3,8 @@ from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
+from .prompts.summarize_docs_system_message import SUMMARIZE_DOCS_SYSTEM_MESSAGE
+
 from .models import PipelineState, DocumentationContext, DocumentationGuide
 
 
@@ -95,14 +97,7 @@ class ContextManager:
         summarization_prompt = ChatPromptTemplate.from_messages(
             [
                 SystemMessage(
-                    content="""You are a technical documentation summarizer. 
-Summarize the following documentation chunk while preserving:
-1. Key technical concepts and terminology
-2. Important architectural decisions
-3. Critical implementation details
-4. Dependencies and relationships
-
-Keep the summary concise but comprehensive."""
+                    content=SUMMARIZE_DOCS_SYSTEM_MESSAGE
                 ),
                 HumanMessage(content="Summarize this documentation:\n\n{chunk}"),
             ]
