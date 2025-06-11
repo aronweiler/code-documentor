@@ -2,11 +2,16 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Generate Documentation (Basic)",
+      "name": "Generate File Documentation Only",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
-      "args": ["--repo-path", "C:\\repos\\example-project", "--verbose"],
+      "args": [
+        "generate",
+        "--repo-path", ".",
+        "--file-docs",
+        "--verbose"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
@@ -14,13 +19,13 @@
       }
     },
     {
-      "name": "Generate Documentation + Design Docs",
+      "name": "Generate Design Docs",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "args": [
-        "--repo-path",
-        "C:\\repos\\example-project",
+        "generate",
+        "--repo-path", ".",
         "--design-docs",
         "--verbose"
       ],
@@ -31,15 +36,14 @@
       }
     },
     {
-      "name": "Generate Design Docs Only",
+      "name": "Generate Guide",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "args": [
-        "--repo-path",
-        "C:\\repos\\example-project",
-        "--design-docs",
-        "--design-docs-only",
+        "generate",
+        "--repo-path", ".",
+        "--guide",
         "--verbose"
       ],
       "console": "integratedTerminal",
@@ -49,16 +53,15 @@
       }
     },
     {
-      "name": "Generate Docs with Context",
+      "name": "Generate File Docs + Guide",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "args": [
-        "--repo-path",
-        "C:\\repos\\example-project",
-        "--docs-path",
-        "C:\\repos\\example-project\\docs",
-        "--design-docs",
+        "generate",
+        "--repo-path", ".",
+        "--file-docs",
+        "--guide",
         "--verbose"
       ],
       "console": "integratedTerminal",
@@ -68,33 +71,16 @@
       }
     },
     {
-      "name": "Generate Docs (Custom Output)",
+      "name": "Generate File Docs + Design Docs + Guide",
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "args": [
-        "--repo-path",
-        "C:\\repos\\example-project",
-        "--output-path",
-        "C:\\Generated-Docs\\example-project",
+        "generate",
+        "--repo-path", "C:\\repos\\example-project",
+        "--file-docs",
         "--design-docs",
-        "--verbose"
-      ],
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}"
-      }
-    },
-    {
-      "name": "Document This Repository",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/main.py",
-      "args": [
-        "--repo-path",
-        "${workspaceFolder}",
-        "--design-docs",
+        "--guide",
         "--verbose"
       ],
       "console": "integratedTerminal",
@@ -108,7 +94,10 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
-      "args": ["analyze", "C:\\repos\\example-project"],
+      "args": [
+        "analyze",
+        "C:\\repos\\example-project"
+      ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
@@ -120,32 +109,14 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
-      "args": ["validate-config"],
-      "console": "integratedTerminal",
-      "cwd": "${workspaceFolder}",
-      "env": {
-        "PYTHONPATH": "${workspaceFolder}"
-      }
-    },
-    {
-      "name": "Debug: Generate with Custom Config",
-      "type": "debugpy",
-      "request": "launch",
-      "program": "${workspaceFolder}/main.py",
       "args": [
-        "--repo-path",
-        "C:\\repos\\example-project",
-        "--config",
-        "debug-config.yaml",
-        "--design-docs",
-        "--verbose"
+        "validate-config"
       ],
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
-      },
-      "justMyCode": false
+      }
     }
   ]
 }

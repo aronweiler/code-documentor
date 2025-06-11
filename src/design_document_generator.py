@@ -4,6 +4,8 @@ from pathlib import Path
 from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 
+from .utilities.token_manager import TokenCounter
+
 from .prompts.continue_truncated_content_system_prompt import (
     CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT,
 )
@@ -19,13 +21,6 @@ from .models import (
     DesignDocumentationState,
     DocumentationContext,
 )
-from .tools import (
-    read_file_content,
-    list_files_in_directory,
-    find_files_by_pattern,
-    get_file_info,
-)
-
 
 class DesignDocumentGenerator:
     """Handles generation of comprehensive design documentation."""
@@ -34,6 +29,7 @@ class DesignDocumentGenerator:
         self.llm = llm
         self.config = config
         self.doc_processor = doc_processor
+        self.token_counter = TokenCounter()
 
     def initialize_design_documents(self, state: PipelineState) -> Dict[str, Any]:
         """Initialize the design documentation state with configured documents."""
@@ -233,8 +229,8 @@ class DesignDocumentGenerator:
         if last_char not in ".!?":
             return True
 
-        # Check token count (approximate)
-        estimated_tokens = len(content.split()) * 1.3  # Rough estimation
+        # Check token count (approximate, not using model-specific tokenization)
+        estimated_tokens = self.token_counter.count_tokens(content)
         if (
             estimated_tokens >= max_tokens * 0.95
         ):  # If using 95% of tokens, likely truncated

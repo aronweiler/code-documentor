@@ -23,10 +23,9 @@ class DocumentationRequest(BaseModel):
     docs_path: Optional[Path] = None
     output_path: Path
     config: PipelineConfig
-    generate_file_documentation: bool = False
-    generate_design_docs: bool = False
-    generate_documentation_guide: bool = False
-    design_docs_only: bool = False 
+    file_docs: bool = False
+    design_docs: bool = False
+    guide: bool = False
 
 
 class CodeFile(BaseModel):
@@ -114,4 +113,4 @@ class PipelineState(BaseModel):
     current_file_index: int = 0
     completed: bool = False
     documentation_guide: Optional[DocumentationGuide] = None
-    design_documentation_state: Optional[DesignDocumentationState] = None    
+    design_documentation_state: Optional[DesignDocumentationState] = None

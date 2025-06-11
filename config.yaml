@@ -3,9 +3,10 @@
 # AI Model Configuration
 model:
   provider: "openai"  # Options: openai, anthropic, azure_openai
-  name: "gpt-4o"  # Model name
-  temperature: 0.2
-  max_tokens: 4096
+  name: "o4-mini"  # Model name
+  temperature: 1 # Must be 1 for o4-mini
+  max_tokens: 100000  # Maximum tokens for generation
+  recursion_limit: 500 # Recursion limit for LangGraph operations
 
 # Token Management
 token_limits:
@@ -55,6 +56,7 @@ output:
   
 # Documentation Templates
 templates:
+  # Individual file documentation template
   file_documentation: |
     # Documentation for {filename}
     
@@ -76,16 +78,16 @@ templates:
 # Add this new section to the existing design_docs configuration
 design_docs:
   enabled: true
-  summary_max_length: 500
   guide_format: "markdown"
 
   # New configuration for design documents
   documents:
     project_overview:
+      enabled: true
       sections:
         - name: "executive_summary"
           enabled: true
-          max_tokens: 5000
+          max_tokens: 8192
           template: |
             Generate an executive summary for this project. Include:
             - Project purpose and goals
@@ -97,7 +99,7 @@ design_docs:
 
         - name: "project_scope"
           enabled: true
-          max_tokens: 8000
+          max_tokens: 8192
           template: |
             Define the project scope including:
             - What is included in the project
@@ -108,11 +110,11 @@ design_docs:
             Base this on the codebase structure and existing documentation.
 
     architecture:
-      enabled: false
+      enabled: true
       sections:
         - name: "system_overview"
           enabled: true
-          max_tokens: 600
+          max_tokens: 8192
           template: |
             Provide a high-level system architecture overview including:
             - System components and their relationships
@@ -120,9 +122,11 @@ design_docs:
             - Key architectural patterns used
             - Technology stack overview
 
+            Mermaid diagrams are encouraged to illustrate the architecture.
+
         - name: "component_details"
           enabled: true
-          max_tokens: 1000
+          max_tokens: 8192
           template: |
             Detail the major system components including:
             - Component responsibilities
@@ -131,11 +135,11 @@ design_docs:
             - Integration points
 
     design:
-      enabled: false
+      enabled: true
       sections:
         - name: "design_principles"
           enabled: true
-          max_tokens: 400
+          max_tokens: 8192
           template: |
             Document the design principles and patterns including:
             - Core design principles followed
@@ -144,7 +148,7 @@ design_docs:
 
         - name: "detailed_design"
           enabled: true
-          max_tokens: 1200
+          max_tokens: 8192
           template: |
             Provide detailed design information including:
             - Class/module design
@@ -153,11 +157,11 @@ design_docs:
             - Security considerations
 
     user_guide:
-      enabled: false
+      enabled: true
       sections:
         - name: "getting_started"
           enabled: true
-          max_tokens: 600
+          max_tokens: 8192
           template: |
             Create a getting started guide including:
             - Installation instructions
@@ -167,7 +171,7 @@ design_docs:
 
         - name: "user_workflows"
           enabled: true
-          max_tokens: 800
+          max_tokens: 8192
           template: |
             Document common user workflows including:
             - Step-by-step procedures
@@ -176,11 +180,11 @@ design_docs:
             - Best practices
 
     developer_guide:
-      enabled: false
+      enabled: true
       sections:
         - name: "development_setup"
           enabled: true
-          max_tokens: 600
+          max_tokens: 8192
           template: |
             Provide development environment setup including:
             - Development dependencies
@@ -190,7 +194,7 @@ design_docs:
 
         - name: "contribution_guidelines"
           enabled: true
-          max_tokens: 800
+          max_tokens: 8192
           template: |
             Document contribution guidelines including:
             - Code style and standards
@@ -203,7 +207,7 @@ design_docs:
       sections:
         - name: "api_overview"
           enabled: true
-          max_tokens: 400
+          max_tokens: 8192
           template: |
             Provide API overview including:
             - API purpose and scope
@@ -213,7 +217,7 @@ design_docs:
 
         - name: "endpoint_details"
           enabled: true
-          max_tokens: 1200
+          max_tokens: 8192
           template: |
             Document API endpoints including:
             - Endpoint descriptions
@@ -226,7 +230,7 @@ design_docs:
       sections:
         - name: "module_overview"
           enabled: true
-          max_tokens: 500
+          max_tokens: 8192
           template: |
             Provide module/package overview including:
             - Module purpose and responsibilities
@@ -236,7 +240,7 @@ design_docs:
 
         - name: "detailed_reference"
           enabled: true
-          max_tokens: 1000
+          max_tokens: 8192
           template: |
             Create detailed module reference including:
             - Class and function documentation
@@ -249,7 +253,7 @@ design_docs:
       sections:
         - name: "testing_strategy"
           enabled: true
-          max_tokens: 500
+          max_tokens: 8192
           template: |
             Document testing strategy including:
             - Testing approach and philosophy
@@ -259,7 +263,7 @@ design_docs:
 
         - name: "test_procedures"
           enabled: true
-          max_tokens: 800
+          max_tokens: 8192
           template: |
             Provide test procedures including:
             - How to run tests
@@ -272,7 +276,7 @@ design_docs:
       sections:
         - name: "deployment_overview"
           enabled: true
-          max_tokens: 500
+          max_tokens: 8192
           template: |
             Provide deployment overview including:
             - Deployment environments
@@ -282,7 +286,7 @@ design_docs:
 
         - name: "deployment_procedures"
           enabled: true
-          max_tokens: 800
+          max_tokens: 8192
           template: |
             Document deployment procedures including:
             - Step-by-step deployment process
