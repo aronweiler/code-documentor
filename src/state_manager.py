@@ -53,13 +53,13 @@ class StateManager:
         if design_state.current_section_index < len(current_doc.sections):
             return "continue"
 
-        # Current document sections are complete, check if we need to assemble
+        # Current document sections are complete, ALWAYS assemble first
         if not current_doc.assembled_content:
             return "assemble"
 
-        # Document is complete, check if there are more documents
+        # After assembly, check if there are more documents
         if design_state.current_document_index + 1 < len(design_state.documents):
-            return "next_document"
+            return "finish"  # Let assemble_design_document handle the transition
 
         return "finish"
 

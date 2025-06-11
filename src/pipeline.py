@@ -168,7 +168,6 @@ class DocumentationPipeline:
             {
                 "continue": "generate_design_section",
                 "assemble": "assemble_design_document",
-                "next_document": "initialize_design_documents",
                 "finish": "save_results",
             },
         )

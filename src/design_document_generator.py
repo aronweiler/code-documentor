@@ -33,6 +33,24 @@ class DesignDocumentGenerator:
 
     def initialize_design_documents(self, state: PipelineState) -> Dict[str, Any]:
         """Initialize the design documentation state with configured documents."""
+
+        # If we already have a design state, we're moving to the next document
+        if state.design_documentation_state and state.design_documentation_state.documents:
+            design_state = state.design_documentation_state
+
+            # Check if we're done with all documents
+            if design_state.current_document_index >= len(design_state.documents):
+                print("All design documents completed")
+                return {"design_documentation_state": design_state}
+
+            # Reset section index for the next document
+            design_state.current_section_index = 0
+            current_doc_name = design_state.documents[design_state.current_document_index].name
+            print(f"Moving to next document: {current_doc_name}")
+
+            return {"design_documentation_state": design_state}
+
+        # First time initialization - create the documents
         print("Initializing design documentation generation...")
 
         design_config = self.config.design_docs.get("documents", {})

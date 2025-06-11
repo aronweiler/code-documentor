@@ -35,6 +35,7 @@ file_processing:
     - .rb
     - .swift
     - .kt
+    - .yaml
   exclude_patterns:
     - "__pycache__"
     - "node_modules"
@@ -45,7 +46,6 @@ file_processing:
     - "build"
     - "venv"
     - ".venv"
-    - "*_tests.py"
     - "__init__.py"
 
 # Output Configuration
@@ -74,11 +74,6 @@ templates:
     
     ## Usage Examples
     {usage_examples}
-
-# Add this new section to the existing design_docs configuration
-design_docs:
-  enabled: true
-  guide_format: "markdown"
 
   # New configuration for design documents
   documents:
