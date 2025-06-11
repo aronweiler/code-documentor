@@ -1,5 +1,6 @@
 from datetime import datetime
 import hashlib
+import logging
 import re
 import yaml
 from typing import Dict, Any, List, Optional
@@ -33,6 +34,24 @@ class DocumentationPipeline:
         self.doc_processor = DocumentProcessor(self.config)
         self.code_analyzer = CodeAnalyzer(self.config)
         self.llm = self._initialize_llm()
+        self._setup_logging()
+
+    def _setup_logging(self):
+        """Setup logging for the pipeline."""
+        log_level = logging.INFO
+        if hasattr(self.config, 'logging') and self.config.logging.get('debug', False):
+            log_level = logging.DEBUG
+
+        logging.basicConfig(
+            level=log_level,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+            handlers=[
+                logging.StreamHandler(),
+                logging.FileHandler('documentation_pipeline.log')
+            ]
+        )
+        self.logger = logging.getLogger(__name__)
+        self.logger.info("Documentation pipeline initialized")
 
     def _initialize_llm(self):
         """Initialize the language model based on configuration."""
@@ -62,18 +81,19 @@ class DocumentationPipeline:
         else:
             raise ValueError(f"Unsupported provider: {provider}")
 
-    def _load_existing_documentation_results(
-        self, state: PipelineState
-    ) -> List[DocumentationResult]:
-        """Load existing documentation files and create DocumentationResult objects."""
+    def _load_existing_documentation_results(self, state: PipelineState) -> List[DocumentationResult]:
+        """Load existing documentation files and create DocumentationResult objects with error handling."""
+        self.logger.info("Loading existing documentation files...")
         print("Loading existing documentation files...")
 
         output_path = state.request.output_path
         if not output_path.exists():
+            self.logger.warning(f"No existing documentation found at {output_path}")
             print(f"No existing documentation found at {output_path}")
             return []
 
         results = []
+        failed_loads = 0
 
         # Find all documentation files
         for doc_file in output_path.rglob("*_documentation.md"):
@@ -81,14 +101,16 @@ class DocumentationPipeline:
                 # Extract metadata to get original file path
                 metadata = self._extract_metadata_from_doc(doc_file)
                 if not metadata:
+                    self.logger.warning(f"No metadata found in {doc_file}, skipping")
                     print(f"Warning: No metadata found in {doc_file}, skipping")
+                    failed_loads += 1
                     continue
 
                 relative_path = metadata.get("relative_path")
                 if not relative_path:
-                    print(
-                        f"Warning: No relative_path in metadata for {doc_file}, skipping"
-                    )
+                    self.logger.warning(f"No relative_path in metadata for {doc_file}, skipping")
+                    print(f"Warning: No relative_path in metadata for {doc_file}, skipping")
+                    failed_loads += 1
                     continue
 
                 # Construct original file path
@@ -127,38 +149,55 @@ class DocumentationPipeline:
                     error_message=None,
                 )
                 results.append(result)
+                self.logger.debug(f"Successfully loaded documentation from {doc_file}")
 
             except Exception as e:
-                print(f"Warning: Could not load documentation from {doc_file}: {e}")
+                error_msg = f"Could not load documentation from {doc_file}: {e}"
+                self.logger.error(error_msg, exc_info=True)
+                print(f"Warning: {error_msg}")
+                failed_loads += 1
                 continue
 
+        self.logger.info(f"Loaded {len(results)} existing documentation files, {failed_loads} failed to load")
         print(f"Loaded {len(results)} existing documentation files")
+
+        if failed_loads > 0:
+            print(f"Warning: {failed_loads} documentation files failed to load")
+
         return results
 
     def load_existing_documentation(self, state: PipelineState) -> Dict[str, Any]:
-        """Load existing documentation files instead of generating new ones."""
+        """Load existing documentation files instead of generating new ones with error handling."""
+        self.logger.info("Loading existing documentation for design docs generation...")
         print("Loading existing documentation for design docs generation...")
 
-        # Load existing documentation results
-        existing_results = self._load_existing_documentation_results(state)
+        try:
+            # Load existing documentation results
+            existing_results = self._load_existing_documentation_results(state)
 
-        if not existing_results:
-            raise ValueError(
-                f"No existing documentation found at {state.request.output_path}. "
-                "Please generate individual file documentation first, or run without --design-docs-only flag."
-            )
+            if not existing_results:
+                error_msg = (f"No existing documentation found at {state.request.output_path}. "
+                            "Please generate individual file documentation first, or run without --design-docs-only flag.")
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
 
-        # Also load existing docs context if available
-        docs_path = state.request.docs_path
-        docs = self.doc_processor.load_existing_docs(docs_path)
+            # Also load existing docs context if available
+            docs_path = state.request.docs_path
+            docs = self.doc_processor.load_existing_docs(docs_path)
 
-        return {
-            "existing_docs": docs,
-            "results": existing_results,
-            "code_files": [],  # Empty since we're not processing source files
-            "current_file_index": len(existing_results),  # Set to end
-            "completed": False,
-        }
+            self.logger.info(f"Successfully loaded {len(existing_results)} existing documentation files")
+
+            return {
+                "existing_docs": docs,
+                "results": existing_results,
+                "code_files": [],  # Empty since we're not processing source files
+                "current_file_index": len(existing_results),  # Set to end
+                "completed": False,
+            }
+
+        except Exception as e:
+            self.logger.error(f"Failed to load existing documentation: {e}", exc_info=True)
+            raise
 
     def should_load_existing_docs(self, state: PipelineState) -> str:
         """Determine whether to load existing docs or generate new ones."""
@@ -172,13 +211,15 @@ class DocumentationPipeline:
 
         # Add nodes
         workflow.add_node("load_existing_docs", self.load_existing_docs)
-        workflow.add_node(
-            "load_existing_documentation", self.load_existing_documentation
-        )
+        workflow.add_node("load_existing_documentation", self.load_existing_documentation)
+        workflow.add_node("load_documentation_guide", self.load_documentation_guide)
         workflow.add_node("summarize_docs", self.summarize_docs)
         workflow.add_node("scan_repository", self.scan_repository)
         workflow.add_node("generate_documentation", self.generate_documentation)
         workflow.add_node("generate_design_docs", self.generate_design_documentation)
+        workflow.add_node("initialize_design_documents", self.initialize_design_documents)
+        workflow.add_node("generate_design_section", self.generate_design_section)
+        workflow.add_node("assemble_design_document", self.assemble_design_document)
         workflow.add_node("save_results", self.save_results)
 
         # Add edges
@@ -190,7 +231,7 @@ class DocumentationPipeline:
             self.should_load_existing_docs,
             {
                 "load_existing": "load_existing_documentation",
-                "continue": "check_summarization",  # We'll handle summarization separately
+                "continue": "check_summarization",
             },
         )
 
@@ -199,10 +240,18 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "check_summarization",
             self.should_summarize,
-            {"summarize": "summarize_docs", "continue": "scan_repository"},
+            {"summarize": "summarize_docs", "continue": "check_file_generation"},
         )
 
-        workflow.add_edge("summarize_docs", "scan_repository")
+        # Check if we should generate file documentation
+        workflow.add_node("check_file_generation", self.check_file_generation_step)
+        workflow.add_conditional_edges(
+            "check_file_generation",
+            self.should_generate_files,
+            {"generate": "scan_repository", "skip": "generate_design_docs"},
+        )
+
+        workflow.add_edge("summarize_docs", "check_file_generation")
         workflow.add_edge("scan_repository", "generate_documentation")
         workflow.add_conditional_edges(
             "generate_documentation",
@@ -211,13 +260,142 @@ class DocumentationPipeline:
         )
 
         # Design-docs-only path
-        workflow.add_edge("load_existing_documentation", "generate_design_docs")
+        workflow.add_edge("load_existing_documentation", "load_documentation_guide")
+        workflow.add_edge("load_documentation_guide", "generate_design_docs")
 
-        # Both paths converge
-        workflow.add_edge("generate_design_docs", "save_results")
+        # Design docs workflow
+        workflow.add_conditional_edges(
+            "generate_design_docs",
+            self.should_generate_design_docs,
+            {"generate": "initialize_design_documents", "skip": "save_results"},
+        )
+
+        workflow.add_edge("initialize_design_documents", "generate_design_section")
+        workflow.add_conditional_edges(
+            "generate_design_section",
+            self.has_more_sections,
+            {
+                "continue": "generate_design_section",
+                "assemble": "assemble_design_document",
+                "next_document": "initialize_design_documents",
+                "finish": "save_results",
+            },
+        )
+
+        workflow.add_conditional_edges(
+            "assemble_design_document",
+            self.has_more_documents,
+            {"continue": "initialize_design_documents", "finish": "save_results"},
+        )
+
         workflow.add_edge("save_results", END)
 
         return workflow.compile()
+    
+    def check_file_generation_step(self, state: PipelineState) -> Dict[str, Any]:
+        """Pass-through step for file generation check."""
+        return {}
+
+    def should_generate_files(self, state: PipelineState) -> str:
+        """Determine if file documentation should be generated."""
+        if state.request.generate_file_documentation:
+            return "generate"
+        return "skip"
+
+    def should_generate_design_docs(self, state: PipelineState) -> str:
+        """Determine if design documentation should be generated."""
+        if state.request.generate_design_docs:
+            return "generate"
+        return "skip"
+    
+    def load_documentation_guide(self, state: PipelineState) -> Dict[str, Any]:
+        """Load existing documentation guide if available."""
+        if not state.request.generate_documentation_guide:
+            # Check if we should load existing guide for design docs generation
+            if state.request.generate_design_docs:
+                guide_path = state.request.output_path / "documentation_guide.md"
+                if guide_path.exists():
+                    try:
+                        with open(guide_path, "r", encoding="utf-8") as f:
+                            guide_content = f.read()
+                        print(f"✓ Loaded existing documentation guide for design docs context")
+
+                        # Add guide content to existing docs context
+                        current_content = state.existing_docs.content
+                        enhanced_content = f"{current_content}\n\n## Documentation Guide\n{guide_content}"
+
+                        enhanced_docs = DocumentationContext(
+                            content=enhanced_content,
+                            token_count=self.doc_processor.count_tokens(enhanced_content),
+                            summarized=state.existing_docs.summarized,
+                            original_docs=state.existing_docs.original_docs + [guide_content],
+                        )
+
+                        return {"existing_docs": enhanced_docs}
+
+                    except Exception as e:
+                        print(f"Warning: Could not load documentation guide from {guide_path}: {e}")
+            return {}
+
+        # Original logic for when guide generation is requested
+        guide_path = state.request.output_path / "documentation_guide.md"
+
+        if guide_path.exists():
+            try:
+                with open(guide_path, "r", encoding="utf-8") as f:
+                    guide_content = f.read()
+                print(f"✓ Loaded existing documentation guide from {guide_path}")
+
+                # Add guide content to existing docs context
+                current_content = state.existing_docs.content
+                enhanced_content = f"{current_content}\n\n## Documentation Guide\n{guide_content}"
+
+                enhanced_docs = DocumentationContext(
+                    content=enhanced_content,
+                    token_count=self.doc_processor.count_tokens(enhanced_content),
+                    summarized=state.existing_docs.summarized,
+                    original_docs=state.existing_docs.original_docs + [guide_content],
+                )
+
+                return {"existing_docs": enhanced_docs}
+
+            except Exception as e:
+                print(f"Warning: Could not load documentation guide from {guide_path}: {e}")
+
+        return {}
+    
+    def has_more_sections(self, state: PipelineState) -> str:
+        """Check if there are more sections to process in the current document."""
+        design_state = state.design_documentation_state
+        if not design_state:
+            return "finish"
+
+        current_doc = design_state.documents[design_state.current_document_index]
+
+        # Check if current section is complete
+        if design_state.current_section_index < len(current_doc.sections):
+            return "continue"
+
+        # Current document sections are complete, check if we need to assemble
+        if not current_doc.assembled_content:
+            return "assemble"
+
+        # Document is complete, check if there are more documents
+        if design_state.current_document_index + 1 < len(design_state.documents):
+            return "next_document"
+
+        return "finish"
+
+    def has_more_documents(self, state: PipelineState) -> str:
+        """Check if there are more documents to process."""
+        design_state = state.design_documentation_state
+        if not design_state:
+            return "finish"
+
+        if design_state.current_document_index + 1 < len(design_state.documents):
+            return "continue"
+
+        return "finish"
 
     def check_summarization_step(self, state: PipelineState) -> Dict[str, Any]:
         """Pass-through step for summarization check."""
@@ -240,11 +418,14 @@ class DocumentationPipeline:
         return "continue"
 
     def summarize_docs(self, state: PipelineState) -> Dict[str, Any]:
-        """Summarize existing documentation if it's too large."""
+        """Summarize existing documentation if it's too large with error handling."""
+        self.logger.info("Starting documentation summarization...")
         print("Summarizing existing documentation...")
 
         docs = state.existing_docs
         chunks = self.doc_processor.create_chunks(docs.content)
+
+        self.logger.info(f"Created {len(chunks)} chunks for summarization")
 
         summarization_prompt = ChatPromptTemplate.from_messages(
             [
@@ -263,19 +444,30 @@ Keep the summary concise but comprehensive."""
         )
 
         summaries = []
-        for chunk in chunks:
+        failed_chunks = 0
+
+        for i, chunk in enumerate(chunks):
             try:
+                self.logger.debug(f"Summarizing chunk {i+1}/{len(chunks)}")
                 messages = summarization_prompt.format_messages(chunk=chunk)
                 response = self.llm.invoke(messages)
+
                 # Handle different response types
                 if hasattr(response, "content"):
                     content = response.content
                 else:
                     content = str(response)
                 summaries.append(content)
+
             except Exception as e:
+                error_msg = f"Error summarizing chunk {i+1}: {e}"
+                self.logger.error(error_msg, exc_info=True)
                 print(f"Error summarizing chunk: {e}")
                 summaries.append(chunk[:500] + "...")  # Fallback truncation
+                failed_chunks += 1
+
+        if failed_chunks > 0:
+            self.logger.warning(f"{failed_chunks}/{len(chunks)} chunks failed summarization, using fallback truncation")
 
         summarized_content = "\n\n".join(summaries)
         summarized_docs = DocumentationContext(
@@ -285,6 +477,7 @@ Keep the summary concise but comprehensive."""
             original_docs=docs.original_docs,
         )
 
+        self.logger.info(f"Summarization complete. Original: {docs.token_count} tokens, Summarized: {summarized_docs.token_count} tokens")
         return {"existing_docs": summarized_docs}
 
     def scan_repository(self, state: PipelineState) -> Dict[str, Any]:
@@ -303,71 +496,78 @@ Keep the summary concise but comprehensive."""
 
         return {"code_files": code_files, "current_file_index": 0}
 
-    def save_single_result(
-        self, state: PipelineState, result: DocumentationResult
-    ) -> None:
-        """Save documentation for a single file immediately."""
+    def save_single_result(self, state: PipelineState, result: DocumentationResult) -> None:
+        """Save documentation for a single file immediately with error handling."""
         if not result.success:
+            self.logger.debug(f"Skipping save for failed result: {result.file_path}")
             return
 
         # Skip saving if this was a skipped file
         if result.documentation == "[SKIPPED - No changes detected]":
+            self.logger.debug(f"Skipping save for unchanged file: {result.file_path}")
             return
 
-        output_path = state.request.output_path
-        output_path.mkdir(parents=True, exist_ok=True)
+        try:
+            output_path = state.request.output_path
+            output_path.mkdir(parents=True, exist_ok=True)
 
-        # Create output filename
-        relative_path = result.file_path.relative_to(state.request.repo_path)
-        doc_filename = f"{relative_path.stem}_documentation.md"
-        doc_path = output_path / relative_path.parent / doc_filename
+            # Create output filename
+            relative_path = result.file_path.relative_to(state.request.repo_path)
+            doc_filename = f"{relative_path.stem}_documentation.md"
+            doc_path = output_path / relative_path.parent / doc_filename
 
-        # Create directory if needed
-        doc_path.parent.mkdir(parents=True, exist_ok=True)
+            # Create directory if needed
+            doc_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # Calculate file hash and generation timestamp
-        file_hash = self._calculate_file_hash(result.file_path)
-        generation_date = datetime.now().isoformat()
+            # Calculate file hash and generation timestamp
+            file_hash = self._calculate_file_hash(result.file_path)
+            generation_date = datetime.now().isoformat()
 
-        # Write documentation with header notice and footer metadata
-        with open(doc_path, "w", encoding="utf-8") as f:
-            # Header notice
-            f.write("<!-- AUTO-GENERATED DOCUMENTATION -->\n")
-            f.write(
-                "<!-- This file was automatically generated and should not be manually edited -->\n"
-            )
-            f.write(
-                "<!-- To update this documentation, regenerate it using the documentation pipeline -->\n\n"
-            )
-
-            # Original title and LLM-generated content
-            f.write(f"# Documentation for {relative_path}\n\n")
-            f.write(result.documentation)
-
-            # Include original code if configured
-            if self.config.output.get("include_code", True):
-                f.write(f"\n\n## Original Code\n\n")
+            # Write documentation with header notice and footer metadata
+            with open(doc_path, "w", encoding="utf-8") as f:
+                # Header notice
+                f.write("<!-- AUTO-GENERATED DOCUMENTATION -->\n")
                 f.write(
-                    f"```{result.file_path.suffix[1:] if result.file_path.suffix else 'text'}\n"
+                    "<!-- This file was automatically generated and should not be manually edited -->\n"
                 )
-                with open(
-                    result.file_path, "r", encoding="utf-8", errors="ignore"
-                ) as code_file:
-                    f.write(code_file.read())
-                f.write("\n```")
+                f.write(
+                    "<!-- To update this documentation, regenerate it using the documentation pipeline -->\n\n"
+                )
 
-            # Footer with machine-readable metadata
-            f.write("\n\n---\n")
-            f.write("<!-- GENERATION METADATA -->\n")
-            f.write("```yaml\n")
-            f.write("# Documentation Generation Metadata\n")
-            f.write(f"file_hash: {file_hash}\n")
-            f.write(f"relative_path: {relative_path}\n")
-            f.write(f"generation_date: {generation_date}\n")
-            f.write("```\n")
-            f.write("<!-- END GENERATION METADATA -->\n")
+                # Original title and LLM-generated content
+                f.write(f"# Documentation for {relative_path}\n\n")
+                f.write(result.documentation)
 
-        print(f"  ✓ Saved documentation: {doc_path}")
+                # Include original code if configured
+                if self.config.output.get("include_code", True):
+                    f.write(f"\n\n## Original Code\n\n")
+                    f.write(
+                        f"```{result.file_path.suffix[1:] if result.file_path.suffix else 'text'}\n"
+                    )
+                    with open(
+                        result.file_path, "r", encoding="utf-8", errors="ignore"
+                    ) as code_file:
+                        f.write(code_file.read())
+                    f.write("\n```")
+
+                # Footer with machine-readable metadata
+                f.write("\n\n---\n")
+                f.write("<!-- GENERATION METADATA -->\n")
+                f.write("```yaml\n")
+                f.write("# Documentation Generation Metadata\n")
+                f.write(f"file_hash: {file_hash}\n")
+                f.write(f"relative_path: {relative_path}\n")
+                f.write(f"generation_date: {generation_date}\n")
+                f.write("```\n")
+                f.write("<!-- END GENERATION METADATA -->\n")
+
+            self.logger.debug(f"Successfully saved documentation to: {doc_path}")
+            print(f"  ✓ Saved documentation: {doc_path}")
+
+        except Exception as e:
+            error_msg = f"Failed to save documentation for {result.file_path}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            raise Exception(error_msg) from e
 
     def has_more_files(self, state: PipelineState) -> str:
         """Check if there are more files to process."""
@@ -376,8 +576,9 @@ Keep the summary concise but comprehensive."""
         return "continue"
 
     def _extract_metadata_from_doc(self, doc_path: Path) -> Optional[Dict[str, str]]:
-        """Extract generation metadata from an existing documentation file."""
+        """Extract generation metadata from an existing documentation file with error handling."""
         if not doc_path.exists():
+            self.logger.warning(f"Documentation file does not exist: {doc_path}")
             return None
 
         try:
@@ -398,6 +599,7 @@ Keep the summary concise but comprehensive."""
                         if ":" in line:
                             key, value = line.split(":", 1)
                             metadata[key.strip()] = value.strip()
+                self.logger.debug(f"Successfully extracted YAML metadata from {doc_path}")
                 return metadata
 
             # Fallback: Look for HTML comment metadata
@@ -412,12 +614,16 @@ Keep the summary concise but comprehensive."""
                     if line and ":" in line:
                         key, value = line.split(":", 1)
                         metadata[key.strip()] = value.strip()
+                self.logger.debug(f"Successfully extracted HTML metadata from {doc_path}")
                 return metadata
 
+            self.logger.warning(f"No metadata found in documentation file: {doc_path}")
             return None
 
         except Exception as e:
-            print(f"Warning: Could not read metadata from {doc_path}: {e}")
+            error_msg = f"Could not read metadata from {doc_path}: {e}"
+            self.logger.error(error_msg, exc_info=True)
+            print(f"Warning: {error_msg}")
             return None
 
     def _should_generate_documentation(
@@ -464,7 +670,7 @@ Keep the summary concise but comprehensive."""
             return True
 
     def generate_documentation(self, state: PipelineState) -> Dict[str, Any]:
-        """Generate documentation for the current code file."""
+        """Generate documentation for the current code file with enhanced error handling."""
         if state.current_file_index >= len(state.code_files):
             return {"completed": True}
 
@@ -472,12 +678,12 @@ Keep the summary concise but comprehensive."""
         total_files = len(state.code_files)
         current_index = state.current_file_index + 1
 
-        print(
-            f"Processing file: {current_file.relative_path} ({current_index}/{total_files})"
-        )
+        self.logger.info(f"Processing file {current_index}/{total_files}: {current_file.relative_path}")
+        print(f"Processing file: {current_file.relative_path} ({current_index}/{total_files})")
 
         # Check if we should generate documentation for this file
         if not self._should_generate_documentation(state, current_file):
+            self.logger.info(f"Skipping unchanged file: {current_file.relative_path}")
             # Create a "skipped" result to track that we processed this file
             result = DocumentationResult(
                 file_path=current_file.path,
@@ -491,16 +697,18 @@ Keep the summary concise but comprehensive."""
             new_index = state.current_file_index + 1
             return {"results": new_results, "current_file_index": new_index}
 
+        self.logger.info(f"Generating documentation for: {current_file.relative_path}")
         print(f"  → Generating documentation...")
 
-        # Prepare context
-        context = self.doc_processor.prepare_context(state.existing_docs)
+        try:
+            # Prepare context
+            context = self.doc_processor.prepare_context(state.existing_docs)
 
-        # Create documentation prompt
-        doc_prompt = ChatPromptTemplate.from_messages(
-            [
-                SystemMessage(
-                    content=f"""You are a technical documentation generator. Create comprehensive documentation for the provided code file.
+            # Create documentation prompt
+            doc_prompt = ChatPromptTemplate.from_messages(
+                [
+                    SystemMessage(
+                        content=f"""You are a technical documentation generator. Create comprehensive documentation for the provided code file.
 
 Use this existing project documentation as context:
 {context}
@@ -515,14 +723,13 @@ Generate documentation that includes:
 Format the output as clean Markdown. Be thorough but concise.
 File extension: {current_file.extension}
 Relative path: {current_file.relative_path}"""
-                ),
-                HumanMessage(
-                    content=f"Document this code file:\n\n```{current_file.extension[1:] if current_file.extension else 'text'}\n{current_file.content}\n```"
-                ),
-            ]
-        )
+                    ),
+                    HumanMessage(
+                        content=f"Document this code file:\n\n```{current_file.extension[1:] if current_file.extension else 'text'}\n{current_file.content}\n```"
+                    ),
+                ]
+            )
 
-        try:
             messages = doc_prompt.format_messages()
             response = self.llm.invoke(messages)
 
@@ -541,9 +748,18 @@ Relative path: {current_file.relative_path}"""
                 "save_incrementally", True
             )
             if save_incrementally:
-                self.save_single_result(state, result)
+                try:
+                    self.save_single_result(state, result)
+                    self.logger.info(f"Successfully saved documentation for: {current_file.relative_path}")
+                except Exception as save_error:
+                    self.logger.error(f"Failed to save documentation for {current_file.relative_path}: {save_error}")
+                    result.success = False
+                    result.error_message = f"Save failed: {str(save_error)}"
 
         except Exception as e:
+            error_msg = f"Failed to generate documentation for {current_file.relative_path}: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+
             result = DocumentationResult(
                 file_path=current_file.path,
                 documentation="",
@@ -555,6 +771,11 @@ Relative path: {current_file.relative_path}"""
         # Update results and move to next file
         new_results = state.results + [result]
         new_index = state.current_file_index + 1
+
+        # Log progress
+        successful_so_far = len([r for r in new_results if r.success])
+        failed_so_far = len([r for r in new_results if not r.success])
+        self.logger.info(f"Progress: {current_index}/{total_files} processed, {successful_so_far} successful, {failed_so_far} failed")
 
         return {"results": new_results, "current_file_index": new_index}
 
@@ -721,16 +942,70 @@ Use this guide to quickly locate relevant documentation when working on specific
 
         print("Starting design documentation generation...")
 
-        # Generate documentation guide
-        guide = self._generate_documentation_guide(state)
+        # Generate documentation guide if requested
+        if state.request.generate_documentation_guide:
+            guide = self._generate_documentation_guide(state)
+            self._save_documentation_guide(state, guide)
 
-        # Save the documentation guide
-        self._save_documentation_guide(state, guide)
+            # Add guide to existing docs context for design document generation
+            if guide and guide.entries:
+                guide_content = self._format_guide_for_context(guide)
+                current_content = state.existing_docs.content
+                enhanced_content = f"{current_content}\n\n## Documentation Guide\n{guide_content}"
 
-        # TODO: Add additional design documentation steps here
-        # This is where you would add more sophisticated design doc generation
+                enhanced_docs = DocumentationContext(
+                    content=enhanced_content,
+                    token_count=self.doc_processor.count_tokens(enhanced_content),
+                    summarized=state.existing_docs.summarized,
+                    original_docs=state.existing_docs.original_docs + [guide_content],
+                )
 
-        return {"documentation_guide": guide, "completed": True}
+                # Update state with enhanced docs
+                state.existing_docs = enhanced_docs
+
+            return {"documentation_guide": guide, "completed": True}
+        else:
+            # Try to load existing documentation guide from well-known location
+            guide_path = state.request.output_path / "documentation_guide.md"
+            if guide_path.exists():
+                try:
+                    with open(guide_path, "r", encoding="utf-8") as f:
+                        guide_content = f.read()
+                    print(f"✓ Loaded existing documentation guide from {guide_path}")
+
+                    # Add to existing docs context
+                    current_content = state.existing_docs.content
+                    enhanced_content = f"{current_content}\n\n## Documentation Guide\n{guide_content}"
+
+                    enhanced_docs = DocumentationContext(
+                        content=enhanced_content,
+                        token_count=self.doc_processor.count_tokens(enhanced_content),
+                        summarized=state.existing_docs.summarized,
+                        original_docs=state.existing_docs.original_docs + [guide_content],
+                    )
+
+                    # Update state with enhanced docs
+                    state.existing_docs = enhanced_docs
+
+                except Exception as e:
+                    print(f"Warning: Could not load documentation guide from {guide_path}: {e}")
+
+            return {"completed": True}
+        
+    def _format_guide_for_context(self, guide: DocumentationGuide) -> str:
+        """Format documentation guide for use as context in design document generation."""
+        guide_content = f"""Generated on: {guide.generation_date}
+    Total documented files: {guide.total_files}
+
+    File Documentation Summary:
+    """
+
+        for entry in guide.entries:
+            guide_content += f"\n### {entry.original_file_path}\n"
+            guide_content += f"Documentation: {entry.doc_file_path}\n"
+            guide_content += f"Summary: {entry.summary}\n"
+
+        return guide_content
 
     def save_results(self, state: PipelineState) -> Dict[str, Any]:
         """Save the summary report and handle any remaining non-incremental saves."""
@@ -738,6 +1013,11 @@ Use this guide to quickly locate relevant documentation when working on specific
 
         output_path = state.request.output_path
         output_path.mkdir(parents=True, exist_ok=True)
+
+        # Create design documentation directory if design docs were generated
+        if state.request.generate_design_docs and state.design_documentation_state:
+            design_docs_path = output_path / "design_documentation"
+            design_docs_path.mkdir(parents=True, exist_ok=True)
 
         # Only save individual files if incremental saving was disabled
         save_incrementally = state.request.config.processing.get(
@@ -761,7 +1041,42 @@ Use this guide to quickly locate relevant documentation when working on specific
         if failed_count > 0:
             print(f"✗ {failed_count} files failed")
 
+        # Report on design documentation if generated
+        if state.design_documentation_state:
+            self._report_design_documentation_status(state)
+
         return {"completed": True}
+    
+    def _report_design_documentation_status(self, state: PipelineState):
+        """Report on the status of design documentation generation."""
+        design_state = state.design_documentation_state
+        if not design_state:
+            return
+
+        successful_docs = len([doc for doc in design_state.documents if doc.success])
+        failed_docs = len([doc for doc in design_state.documents if not doc.success])
+        total_docs = len(design_state.documents)
+
+        print(f"\n🎨 Design Documentation Status:")
+        print(f"   ✓ {successful_docs}/{total_docs} documents generated successfully")
+
+        if failed_docs > 0:
+            print(f"   ✗ {failed_docs} documents failed")
+            for doc in design_state.documents:
+                if not doc.success:
+                    print(f"     - {doc.name}: {doc.error_message}")
+
+        # Report section-level details
+        total_sections = sum(len(doc.sections) for doc in design_state.documents)
+        successful_sections = sum(
+            len([s for s in doc.sections if s.success]) 
+            for doc in design_state.documents
+        )
+        failed_sections = total_sections - successful_sections
+
+        print(f"   📝 {successful_sections}/{total_sections} sections generated")
+        if failed_sections > 0:
+            print(f"   ⚠️  {failed_sections} sections failed")
 
     def _generate_summary_report(self, state: PipelineState):
         """Generate a summary report of the documentation process."""
@@ -804,6 +1119,10 @@ Use this guide to quickly locate relevant documentation when working on specific
                 relative_path = result.file_path.relative_to(state.request.repo_path)
                 report_content += f"- {relative_path}: {result.error_message}\n"
 
+        # Add design documentation report
+        if state.design_documentation_state:
+            report_content += self._generate_design_docs_report_section(state)
+
         # Add existing documentation info
         if state.existing_docs.content:
             report_content += f"\n## Existing Documentation Context\n"
@@ -824,6 +1143,10 @@ Use this guide to quickly locate relevant documentation when working on specific
             f"- **Max files limit**: {max_files if max_files else 'No limit'}\n"
         )
         report_content += f"- **Incremental saving**: {save_incrementally}\n"
+        report_content += f"- **Generate file documentation**: {state.request.generate_file_documentation}\n"
+        report_content += f"- **Generate design docs**: {state.request.generate_design_docs}\n"
+        report_content += f"- **Generate documentation guide**: {state.request.generate_documentation_guide}\n"
+        report_content += f"- **Design docs only**: {state.request.design_docs_only}\n"
 
         # Save report
         report_path = state.request.output_path / "documentation_report.md"
@@ -831,6 +1154,72 @@ Use this guide to quickly locate relevant documentation when working on specific
             f.write(report_content)
 
         print(f"✓ Summary report saved: {report_path}")
+    
+    def _generate_design_docs_report_section(self, state: PipelineState) -> str:
+        """Generate the design documentation section of the summary report."""
+        design_state = state.design_documentation_state
+        if not design_state:
+            return ""
+
+        report_section = "\n## Design Documentation\n"
+
+        successful_docs = [doc for doc in design_state.documents if doc.success]
+        failed_docs = [doc for doc in design_state.documents if not doc.success]
+
+        report_section += f"- **Total design documents**: {len(design_state.documents)}\n"
+        report_section += f"- **Successfully generated**: {len(successful_docs)}\n"
+        report_section += f"- **Failed**: {len(failed_docs)}\n"
+
+        if successful_docs:
+            report_section += "\n### Successfully Generated Design Documents\n"
+            for doc in successful_docs:
+                successful_sections = len([s for s in doc.sections if s.success])
+                total_sections = len(doc.sections)
+                report_section += f"- **{doc.name}**: {successful_sections}/{total_sections} sections\n"
+                if doc.file_path:
+                    relative_path = doc.file_path.relative_to(state.request.output_path)
+                    report_section += f"  - File: {relative_path}\n"
+
+        if failed_docs:
+            report_section += "\n### Failed Design Documents\n"
+            for doc in failed_docs:
+                report_section += f"- **{doc.name}**: {doc.error_message}\n"
+
+                # Report failed sections
+                failed_sections = [s for s in doc.sections if not s.success]
+                if failed_sections:
+                    report_section += "  - Failed sections:\n"
+                    for section in failed_sections:
+                        report_section += f"    - {section.name}: {section.error_message}\n"
+
+        # Add section-level statistics
+        total_sections = sum(len(doc.sections) for doc in design_state.documents)
+        successful_sections = sum(
+            len([s for s in doc.sections if s.success]) 
+            for doc in design_state.documents
+        )
+
+        report_section += f"\n### Section Statistics\n"
+        report_section += f"- **Total sections**: {total_sections}\n"
+        report_section += f"- **Successful sections**: {successful_sections}\n"
+        report_section += f"- **Failed sections**: {total_sections - successful_sections}\n"
+
+        return report_section
+    
+    def _create_output_directory_structure(self, state: PipelineState):
+        """Create the output directory structure for documentation."""
+        output_path = state.request.output_path
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        # Create design documentation directory if needed
+        if state.request.generate_design_docs:
+            design_docs_path = output_path / "design_documentation"
+            design_docs_path.mkdir(parents=True, exist_ok=True)
+
+            # Create subdirectories for different document types if needed
+            # This could be extended in the future for better organization
+
+        print(f"✓ Output directory structure created at: {output_path}")
 
     def _calculate_file_hash(self, file_path: Path) -> str:
         """Calculate SHA-256 hash of a file."""
@@ -850,18 +1239,25 @@ Use this guide to quickly locate relevant documentation when working on specific
         repo_path: Path,
         docs_path: Optional[Path] = None,
         output_path: Optional[Path] = None,
+        generate_file_documentation: bool = False,
         generate_design_docs: bool = False,
-        design_docs_only: bool = False,  # New parameter
+        generate_documentation_guide: bool = False,
+        design_docs_only: bool = False,
     ) -> PipelineState:
         """Run the complete documentation pipeline."""
 
         if output_path is None:
             output_path = repo_path / "documentation_output"
 
-        # Validate design_docs_only flag
+        # Validate flag combinations
         if design_docs_only and not generate_design_docs:
             raise ValueError(
                 "design_docs_only requires generate_design_docs to be True"
+            )
+
+        if generate_documentation_guide and not generate_design_docs:
+            raise ValueError(
+                "generate_documentation_guide requires generate_design_docs to be True"
             )
 
         request = DocumentationRequest(
@@ -869,7 +1265,9 @@ Use this guide to quickly locate relevant documentation when working on specific
             docs_path=docs_path,
             output_path=output_path,
             config=self.config,
+            generate_file_documentation=generate_file_documentation,
             generate_design_docs=generate_design_docs,
+            generate_documentation_guide=generate_documentation_guide,
             design_docs_only=design_docs_only,
         )
 

@@ -22,8 +22,10 @@ class DocumentationRequest(BaseModel):
     docs_path: Optional[Path] = None
     output_path: Path
     config: PipelineConfig
+    generate_file_documentation: bool = False
     generate_design_docs: bool = False
-    design_docs_only: bool = False  
+    generate_documentation_guide: bool = False
+    design_docs_only: bool = False 
 
 
 class CodeFile(BaseModel):
@@ -68,7 +70,39 @@ class DocumentationGuide(BaseModel):
     total_files: int = 0
     generation_date: str = ""
 
+    
+class DesignDocumentSection(BaseModel):
+    """Model representing a section within a design document."""
 
+    name: str
+    enabled: bool
+    max_tokens: int
+    template: str
+    content: Optional[str] = None
+    success: bool = False
+    error_message: Optional[str] = None
+    retry_count: int = 0
+    
+class DesignDocument(BaseModel):
+    """Model representing a complete design document."""
+
+    name: str
+    sections: List[DesignDocumentSection] = Field(default_factory=list)
+    assembled_content: Optional[str] = None
+    file_path: Optional[Path] = None
+    success: bool = False
+    error_message: Optional[str] = None
+    
+class DesignDocumentationState(BaseModel):
+    """Model representing the state of design documentation generation."""
+
+    documents: List[DesignDocument] = Field(default_factory=list)
+    current_document_index: int = 0
+    current_section_index: int = 0
+    completed_documents: List[str] = Field(default_factory=list)  # Names of completed docs
+    accumulated_context: str = ""  # Context from previously generated documents
+    completed: bool = False
+    
 class PipelineState(BaseModel):
     """State model for the LangGraph pipeline."""
 
@@ -78,4 +112,5 @@ class PipelineState(BaseModel):
     results: List[DocumentationResult] = Field(default_factory=list)
     current_file_index: int = 0
     completed: bool = False
-    documentation_guide: Optional[DocumentationGuide] = None  
+    documentation_guide: Optional[DocumentationGuide] = None
+    design_documentation_state: Optional[DesignDocumentationState] = None    

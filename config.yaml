@@ -18,12 +18,6 @@ processing:
   max_files: 100             # Maximum number of files to process (null/0 for no limit)
   save_incrementally: true   # Save each file as it's processed (recommended)
 
-# Documentation Generation
-design_docs:
-  enabled: true
-  summary_max_length: 500  # Maximum length for file summaries
-  guide_format: "markdown"  # Format for the documentation guide
-
 # File Processing
 file_processing:
   supported_extensions:
@@ -78,3 +72,224 @@ templates:
     
     ## Usage Examples
     {usage_examples}
+
+# Add this new section to the existing design_docs configuration
+design_docs:
+  enabled: true
+  summary_max_length: 500
+  guide_format: "markdown"
+
+  # New configuration for design documents
+  documents:
+    project_overview:
+      sections:
+        - name: "executive_summary"
+          enabled: true
+          max_tokens: 500
+          template: |
+            Generate an executive summary for this project. Include:
+            - Project purpose and goals
+            - Key stakeholders and target audience
+            - High-level scope and deliverables
+            - Success criteria
+
+            Use the existing documentation and code analysis to provide accurate, concise information.
+
+        - name: "project_scope"
+          enabled: true
+          max_tokens: 800
+          template: |
+            Define the project scope including:
+            - What is included in the project
+            - What is explicitly excluded
+            - Key assumptions and constraints
+            - Dependencies on external systems or teams
+
+            Base this on the codebase structure and existing documentation.
+
+    architecture:
+      sections:
+        - name: "system_overview"
+          enabled: true
+          max_tokens: 600
+          template: |
+            Provide a high-level system architecture overview including:
+            - System components and their relationships
+            - Data flow between components
+            - Key architectural patterns used
+            - Technology stack overview
+
+        - name: "component_details"
+          enabled: true
+          max_tokens: 1000
+          template: |
+            Detail the major system components including:
+            - Component responsibilities
+            - Interfaces and APIs
+            - Data models and schemas
+            - Integration points
+
+    design:
+      sections:
+        - name: "design_principles"
+          enabled: true
+          max_tokens: 400
+          template: |
+            Document the design principles and patterns including:
+            - Core design principles followed
+            - Architectural patterns implemented
+            - Design decisions and rationale
+
+        - name: "detailed_design"
+          enabled: true
+          max_tokens: 1200
+          template: |
+            Provide detailed design information including:
+            - Class/module design
+            - Database design
+            - Algorithm descriptions
+            - Security considerations
+
+    user_guide:
+      sections:
+        - name: "getting_started"
+          enabled: true
+          max_tokens: 600
+          template: |
+            Create a getting started guide including:
+            - Installation instructions
+            - Initial setup and configuration
+            - Basic usage examples
+            - Common first tasks
+
+        - name: "user_workflows"
+          enabled: true
+          max_tokens: 800
+          template: |
+            Document common user workflows including:
+            - Step-by-step procedures
+            - Screenshots or examples where helpful
+            - Troubleshooting common issues
+            - Best practices
+
+    developer_guide:
+      sections:
+        - name: "development_setup"
+          enabled: true
+          max_tokens: 600
+          template: |
+            Provide development environment setup including:
+            - Development dependencies
+            - Build and test procedures
+            - IDE configuration
+            - Local development workflow
+
+        - name: "contribution_guidelines"
+          enabled: true
+          max_tokens: 800
+          template: |
+            Document contribution guidelines including:
+            - Code style and standards
+            - Testing requirements
+            - Pull request process
+            - Development best practices
+
+    api_documentation:
+      sections:
+        - name: "api_overview"
+          enabled: true
+          max_tokens: 400
+          template: |
+            Provide API overview including:
+            - API purpose and scope
+            - Authentication methods
+            - Base URLs and versioning
+            - Common response formats
+
+        - name: "endpoint_details"
+          enabled: true
+          max_tokens: 1200
+          template: |
+            Document API endpoints including:
+            - Endpoint descriptions
+            - Request/response schemas
+            - Example requests and responses
+            - Error codes and handling
+
+    module_documentation:
+      sections:
+        - name: "module_overview"
+          enabled: true
+          max_tokens: 500
+          template: |
+            Provide module/package overview including:
+            - Module purpose and responsibilities
+            - Key classes and functions
+            - Module dependencies
+            - Usage patterns
+
+        - name: "detailed_reference"
+          enabled: true
+          max_tokens: 1000
+          template: |
+            Create detailed module reference including:
+            - Class and function documentation
+            - Parameter descriptions
+            - Return value specifications
+            - Usage examples
+
+    testing_documentation:
+      sections:
+        - name: "testing_strategy"
+          enabled: true
+          max_tokens: 500
+          template: |
+            Document testing strategy including:
+            - Testing approach and philosophy
+            - Types of tests implemented
+            - Test coverage goals
+            - Testing tools and frameworks
+
+        - name: "test_procedures"
+          enabled: true
+          max_tokens: 800
+          template: |
+            Provide test procedures including:
+            - How to run tests
+            - Test data setup
+            - Continuous integration setup
+            - Manual testing procedures
+
+    deployment_documentation:
+      sections:
+        - name: "deployment_overview"
+          enabled: true
+          max_tokens: 500
+          template: |
+            Provide deployment overview including:
+            - Deployment environments
+            - Infrastructure requirements
+            - Deployment strategy
+            - Rollback procedures
+
+        - name: "deployment_procedures"
+          enabled: true
+          max_tokens: 800
+          template: |
+            Document deployment procedures including:
+            - Step-by-step deployment process
+            - Configuration management
+            - Monitoring and health checks
+            - Troubleshooting deployment issues
+
+# Add retry configuration for failed generations
+retry_config:
+  max_retries: 3
+  retry_on_truncation: true
+  continuation_prompt: |
+    The previous generation was truncated. Please continue exactly where it left off, 
+    maintaining the same style and format. Here is what was generated so far:
+
+    {previous_content}
+
+    Please continue from where this left off and complete the section.

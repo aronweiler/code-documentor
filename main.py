@@ -47,14 +47,14 @@ def create_subcommand_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic documentation generation
-  python main.py generate --repo-path "C:\\path\\to\\repo"
+  # Generate individual file documentation only
+  python main.py generate --repo-path "C:\\path\\to\\repo" --generate-file-documentation
 
-  # With design documentation
-  python main.py generate --repo-path "C:\\path\\to\\repo" --design-docs
-
-  # Design docs only
+  # Generate design documentation only (requires existing file docs)
   python main.py generate --repo-path "C:\\path\\to\\repo" --design-docs --design-docs-only
+
+  # Generate both file and design documentation with guide
+  python main.py generate --repo-path "C:\\path\\to\\repo" --generate-file-documentation --design-docs --generate-documentation-guide
 
   # Utility commands
   python main.py analyze "C:\\path\\to\\repo"
@@ -88,14 +88,14 @@ def create_direct_parser():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Basic documentation generation
-  python main.py --repo-path "C:\\path\\to\\repo"
+  # Generate individual file documentation only
+  python main.py --repo-path "C:\\path\\to\\repo" --generate-file-documentation
 
-  # With design documentation
-  python main.py --repo-path "C:\\path\\to\\repo" --design-docs
-
-  # Design docs only
+  # Generate design documentation only (requires existing file docs)
   python main.py --repo-path "C:\\path\\to\\repo" --design-docs --design-docs-only
+
+  # Generate both file and design documentation with guide
+  python main.py --repo-path "C:\\path\\to\\repo" --generate-file-documentation --design-docs --generate-documentation-guide
         """
     )
 
@@ -128,9 +128,19 @@ def add_generate_arguments(parser):
         help='Path to configuration file (default: config.yaml)'
     )
     parser.add_argument(
+        '--generate-file-documentation', 
+        action='store_true',
+        help='Generate individual file documentation'
+    )
+    parser.add_argument(
         '--design-docs', 
         action='store_true',
-        help='Generate design documentation in addition to code documentation'
+        help='Generate design documentation'
+    )
+    parser.add_argument(
+        '--generate-documentation-guide', 
+        action='store_true',
+        help='Generate documentation guide (requires --design-docs)'
     )
     parser.add_argument(
         '--design-docs-only', 
@@ -147,9 +157,15 @@ def add_generate_arguments(parser):
 def run_documentation_generation(args):
     """Run the main documentation generation pipeline."""
 
-    # Validate design-docs-only flag
+    # Validate flag combinations
     if args.design_docs_only and not args.design_docs:
         raise ValueError("--design-docs-only requires --design-docs flag")
+
+    if args.generate_documentation_guide and not args.design_docs:
+        raise ValueError("--generate-documentation-guide requires --design-docs flag")
+
+    if not args.generate_file_documentation and not args.design_docs:
+        raise ValueError("Must specify at least one of --generate-file-documentation or --design-docs")
 
     print("🚀 Starting Documentation Pipeline")
     print("=" * 50)
@@ -173,7 +189,9 @@ def run_documentation_generation(args):
     print(f"📁 Repository: {repo_path}")
     print(f"📚 Existing docs: {docs_path if docs_path else 'None'}")
     print(f"📤 Output: {output_path if output_path else repo_path / 'documentation_output'}")
+    print(f"📝 File docs: {'Yes' if args.generate_file_documentation else 'No'}")
     print(f"🎨 Design docs: {'Yes' if args.design_docs else 'No'}")
+    print(f"📋 Documentation guide: {'Yes' if args.generate_documentation_guide else 'No'}")
     print(f"🎯 Design docs only: {'Yes' if args.design_docs_only else 'No'}")
     print(f"⚙️  Config: {args.config}")
     print()
@@ -185,7 +203,9 @@ def run_documentation_generation(args):
             repo_path=repo_path,
             docs_path=docs_path,
             output_path=output_path,
+            generate_file_documentation=args.generate_file_documentation,
             generate_design_docs=args.design_docs,
+            generate_documentation_guide=args.generate_documentation_guide,
             design_docs_only=args.design_docs_only
         )
 
@@ -198,14 +218,16 @@ def run_documentation_generation(args):
         print("✅ Documentation Pipeline Completed!")
         print(f"📊 Results: {successful} generated, {skipped} skipped, {failed} failed")
 
-        if args.design_docs and hasattr(final_state, 'documentation_guide') and final_state.documentation_guide:
+        if args.generate_documentation_guide and hasattr(final_state, 'documentation_guide') and final_state.documentation_guide:
             print(f"📋 Documentation guide created with {final_state.documentation_guide.total_files} entries")
 
         if args.design_docs_only:
             print("🎯 Design documentation generated from existing files")
-        elif args.design_docs:
+        elif args.design_docs and args.generate_file_documentation:
             print("📝 Individual + design documentation completed")
-        else:
+        elif args.design_docs:
+            print("🎨 Design documentation completed")
+        elif args.generate_file_documentation:
             print("📝 Individual documentation completed")
 
         if failed > 0:
