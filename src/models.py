@@ -114,3 +114,4 @@ class PipelineState(BaseModel):
     completed: bool = False
     documentation_guide: Optional[DocumentationGuide] = None
     design_documentation_state: Optional[DesignDocumentationState] = None
+    documentation_guide: Optional[DocumentationGuide] = None

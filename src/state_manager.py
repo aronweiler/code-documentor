@@ -11,7 +11,10 @@ class StateManager:
 
     def should_load_existing_docs(self, state: PipelineState) -> str:
         """Determine whether to load existing docs or generate new ones."""
-        # This method is now obsolete since design_docs_only is removed.
+        # If we're only generating guides or design docs (not file docs), 
+        # we need to load existing documentation
+        if not state.request.file_docs and (state.request.guide or state.request.design_docs):
+            return "load_existing"
         return "continue"
 
     def should_summarize(self, state: PipelineState, doc_processor) -> str:

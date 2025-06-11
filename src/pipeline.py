@@ -34,11 +34,11 @@ class DocumentationPipeline:
         self.config = self.config_manager.load_config()
         self.doc_processor = DocumentProcessor(self.config)
         self.code_analyzer = CodeAnalyzer(self.config)
-        
+
         # Initialize LLM manager and get LLM instance
         self.llm_manager = LLMManager(self.config_manager)
         self.llm = self.llm_manager.initialize_llm()
-        
+
         # Initialize all the specialized managers
         self.design_doc_generator = DesignDocumentGenerator(
             self.llm, self.config, self.doc_processor
@@ -50,7 +50,7 @@ class DocumentationPipeline:
         self.report_generator = ReportGenerator(self.config)
         self.context_manager = ContextManager(self.config, self.doc_processor, self.llm)
         self.state_manager = StateManager(self.config)
-        
+
         self._setup_logging()
 
     def _setup_logging(self):
@@ -83,6 +83,9 @@ class DocumentationPipeline:
         workflow.add_node("summarize_docs", self.summarize_docs)
         workflow.add_node("scan_repository", self.scan_repository)
         workflow.add_node("generate_documentation", self.generate_documentation)
+        workflow.add_node(
+            "generate_documentation_guide", self.generate_documentation_guide_node
+        )  # NEW
         workflow.add_node("generate_design_docs", self.generate_design_documentation)
         workflow.add_node(
             "initialize_design_documents", self.initialize_design_documents
@@ -117,7 +120,10 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "check_file_generation",
             self.should_generate_files,
-            {"generate": "scan_repository", "skip": "generate_design_docs"},
+            {
+                "generate": "scan_repository",
+                "skip": "check_guide_generation",
+            },  # CHANGED
         )
 
         workflow.add_edge("summarize_docs", "check_file_generation")
@@ -125,12 +131,28 @@ class DocumentationPipeline:
         workflow.add_conditional_edges(
             "generate_documentation",
             self.has_more_files,
-            {"continue": "generate_documentation", "finish": "generate_design_docs"},
+            {
+                "continue": "generate_documentation",
+                "finish": "check_guide_generation",
+            },  # CHANGED
         )
+
+        # Guide generation check and flow
+        workflow.add_node("check_guide_generation", self.check_guide_generation_step)
+        workflow.add_conditional_edges(
+            "check_guide_generation",
+            self.should_generate_guide,
+            {
+                "generate": "generate_documentation_guide",
+                "skip": "generate_design_docs",
+            },
+        )
+
+        workflow.add_edge("generate_documentation_guide", "generate_design_docs")
 
         # Design-docs-only path
         workflow.add_edge("load_existing_documentation", "load_documentation_guide")
-        workflow.add_edge("load_documentation_guide", "generate_design_docs")
+        workflow.add_edge("load_documentation_guide", "check_guide_generation")
 
         # Design docs workflow
         workflow.add_conditional_edges(
@@ -176,6 +198,28 @@ class DocumentationPipeline:
         """Load existing documentation files instead of generating new ones."""
         return self.guide_generator.load_existing_documentation(state)
 
+    def generate_documentation_guide_node(self, state: PipelineState) -> Dict[str, Any]:
+        """Generate documentation guide as a separate workflow step."""
+        if not state.request.guide:
+            return {"completed": True}
+
+        print("Generating documentation guide...")
+        guide = self.guide_generator.generate_documentation_guide(state)
+        self.guide_generator.save_documentation_guide(state, guide)
+
+        # Add guide to existing docs context for design document generation
+        if guide and guide.entries:
+            enhanced_docs = self.context_manager.enhance_context_with_guide(
+                state, guide
+            )
+            return {"documentation_guide": guide, "existing_docs": enhanced_docs}
+
+        return {"documentation_guide": guide}
+
+    def should_generate_guide(self, state: PipelineState) -> str:
+        """Determine if documentation guide should be generated."""
+        return "generate" if state.request.guide else "skip"
+
     def load_documentation_guide(self, state: PipelineState) -> Dict[str, Any]:
         """Load existing documentation guide if available."""
         return self.context_manager.load_documentation_guide(state)
@@ -217,7 +261,9 @@ class DocumentationPipeline:
         )
 
         # Check if we should generate documentation for this file
-        if not self.file_processor.should_generate_documentation(state, current_file, self.guide_generator):
+        if not self.file_processor.should_generate_documentation(
+            state, current_file, self.guide_generator
+        ):
             self.logger.info(f"Skipping unchanged file: {current_file.relative_path}")
             # Create a "skipped" result to track that we processed this file
             result = DocumentationResult(
@@ -327,20 +373,9 @@ Relative path: {current_file.relative_path}"""
 
         print("Starting design documentation generation...")
 
-        # Generate documentation guide if requested
-        if state.request.guide:
-            guide = self.guide_generator.generate_documentation_guide(state)
-            self.guide_generator.save_documentation_guide(state, guide)
-
-            # Add guide to existing docs context for design document generation
-            if guide and guide.entries:
-                enhanced_docs = self.context_manager.enhance_context_with_guide(state, guide)
-                # Update state with enhanced docs
-                state.existing_docs = enhanced_docs
-
-            return {"documentation_guide": guide, "completed": True}
-        else:
-            # Try to load existing documentation guide from well-known location
+        # Try to load existing documentation guide from well-known location
+        # (only if guide wasn't generated in a previous step)
+        if not hasattr(state, "documentation_guide") or not state.documentation_guide:
             guide_content = self.context_manager.load_existing_guide_from_file(state)
             if guide_content:
                 # Add to existing docs context
@@ -359,7 +394,11 @@ Relative path: {current_file.relative_path}"""
                 # Update state with enhanced docs
                 state.existing_docs = enhanced_docs
 
-            return {"completed": True}
+        return {"completed": True}
+
+    def check_guide_generation_step(self, state: PipelineState) -> Dict[str, Any]:
+        """Pass-through step for guide generation check."""
+        return {}  # No state changes, just a decision point
 
     def initialize_design_documents(self, state: PipelineState) -> Dict[str, Any]:
         """Initialize the design documentation state with configured documents."""
@@ -453,6 +492,9 @@ Relative path: {current_file.relative_path}"""
 
         pipeline = self.create_pipeline()
         model_config = self.config_manager.get_model_config()
-        final_state = pipeline.invoke(initial_state, config={"recursion_limit": model_config.get("recursion_limit", 50)})
+        final_state = pipeline.invoke(
+            initial_state,
+            config={"recursion_limit": model_config.get("recursion_limit", 50)},
+        )
 
         return final_state

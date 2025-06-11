@@ -3,9 +3,9 @@
 # AI Model Configuration
 model:
   provider: "openai"  # Options: openai, anthropic, azure_openai
-  name: "o4-mini"  # Model name
+  name: "gpt-4.1"  # Model name
   temperature: 1 # Must be 1 for o4-mini
-  max_tokens: 100000  # Maximum tokens for generation
+  max_tokens: 32000  # Maximum tokens for generation
   recursion_limit: 500 # Recursion limit for LangGraph operations
 
 # Token Management
