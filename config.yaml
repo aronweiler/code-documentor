@@ -16,7 +16,7 @@ token_limits:
 
 # Configuration File for Documentation Pipeline
 processing:
-  max_files: 100             # Maximum number of files to process (null/0 for no limit)
+  max_files: 1000             # Maximum number of files to process (null/0 for no limit)
   save_incrementally: true   # Save each file as it's processed (recommended)
 
 # File Processing
@@ -25,16 +25,20 @@ file_processing:
     - .py
     - .js
     - .ts
+    - .tsx
     - .java
     - .cpp
     - .c
     - .cs
     - .go
     - .rs
+    - .sh
     - .php
     - .rb
+    - .tf
     - .swift
     - .kt
+    - .json
     - .yaml
   exclude_patterns:
     - "__pycache__"
@@ -43,10 +47,26 @@ file_processing:
     - "*.pyc"
     - "*.log"
     - "dist"
+    - ".claude"
     - "build"
+    - ".mypy_cache"
     - "venv"
     - ".venv"
     - "__init__.py"
+    - "package-lock.json"
+    - "alembic"
+    - __pycache__
+    - node_modules
+    - .git
+    - dist
+    - .claude
+    - build
+    - .mypy_cache
+    - venv
+    - .venv
+    - __init__.py
+    - package-lock.json
+    - alembic
 
 # Output Configuration
 output:

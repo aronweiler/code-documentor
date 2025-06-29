@@ -19,6 +19,25 @@
       }
     },
     {
+      "name": "Generate All Docs for Therapy-Link",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": [
+        "generate",
+        "--repo-path", "H:\\repos\\therapy-link",
+        "--docs-path", "H:\\repos\\therapy-link\\docs",
+        "--file-docs",
+        "--guide",
+        "--verbose"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
       "name": "Generate Design Docs",
       "type": "debugpy",
       "request": "launch",

@@ -12,7 +12,7 @@ class PipelineConfig(BaseModel):
     file_processing: Dict[str, Any] = Field(default_factory=dict)
     processing: Dict[str, Any] = Field(default_factory=dict)
     output: Dict[str, Any] = Field(default_factory=dict)
-    templates: Dict[str, str] = Field(default_factory=dict)
+    templates: Dict[str, Any] = Field(default_factory=dict)
     design_docs: Dict[str, Any] = Field(default_factory=dict)  
 
 
