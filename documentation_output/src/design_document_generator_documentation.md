@@ -4,11 +4,11 @@
 
 # Documentation for src\design_document_generator.py
 
-# Design Document Generator (`design_document_generator.py`)
+# `design_document_generator.py`
 
 ## Purpose
 
-This file contains the `DesignDocumentGenerator` class, which orchestrates the automated generation of comprehensive software design documents. It manages the workflow for initializing, generating, assembling, and saving multi-section design documents using a Large Language Model (LLM), project-specific configuration, and supporting utilities. The aim is to best leverage AI to systematically and coherently create design documentation as part of a larger documentation pipeline.
+This file implements the `DesignDocumentGenerator` class, responsible for managing the end-to-end process of generating comprehensive software design documentation. It orchestrates section-wise generation, handles prompt preparation and retries, assembles documents for coherence, and persists results to disk. It leverages LLMs (via LangChain) and modular configuration to flexibly support various styles of design documents.
 
 ---
 
@@ -16,10 +16,11 @@ This file contains the `DesignDocumentGenerator` class, which orchestrates the a
 
 ### Main Responsibilities
 
-- **Initialize Design Documents**: Set up the design document generation state, filtering by configuration.
-- **Section-by-Section Generation**: AI generates each document section, with context awareness and retry/truncation handling.
-- **Document Assembly**: Joins all sections together into a final, cohesive document, optionally utilizing the LLM for improved quality.
-- **Output Management**: Writes resulting documents to disk and updates state for downstream pipeline stages.
+- **Initialization**: Prepares a state containing the types and structures of design documents to be created, based on project configuration.
+- **Section-wise Generation**: Steps through each section of every enabled document type, using LLMs to generate content by contextually composing prompts.
+- **Truncation Handling & Retries**: Detects when LLM output is truncated due to token constraints and automatically continues section generation, retrying if needed.
+- **Assembly**: Uses an LLM (or a fallback mechanism) to combine generated sections into a single coherent document.
+- **Persistence**: Writes the assembled document to disk, with metadata.
 
 ---
 
@@ -27,151 +28,121 @@ This file contains the `DesignDocumentGenerator` class, which orchestrates the a
 
 ### Class: `DesignDocumentGenerator`
 
-#### Initialization
+#### Constructor
 
 ```python
 def __init__(self, llm, config, doc_processor)
 ```
-- **llm**: An LLM interface (supports `.bind_tools()` and `.invoke()`).
-- **config**: A configuration object specifying enabled documents, retry logic, etc.
-- **doc_processor**: (Unused directly in the class here but likely for future expansion).
-- **token_counter**: Utility for counting tokens in text, used for truncation heuristics.
+- **llm**: The language model interface, must support .invoke and .bind_tools.
+- **config**: User or project configuration, including document and retry settings.
+- **doc_processor**: Processor for managing and postprocessing documents.
+
+#### Main Methods
+
+- **initialize_design_documents(state: PipelineState) -> Dict[str, Any]**
+  - Inspects configuration and existing pipeline state to build or progress a list of documents and sections for generation.
+
+- **generate_design_section(state: PipelineState) -> Dict[str, Any]**
+  - Generates the next logical section for the current document, handling retries and context preparation.
+
+- **assemble_design_document(state: PipelineState) -> Dict[str, Any]**
+  - Collects all generated sections into a full document, optionally passing them through an LLM for final assembly.
+
+#### Important Private Methods
+
+- **_prepare_section_context(...) -> str**
+  - Assembles context for section generation, including previous documents, sections, and any relevant prior information.
+- **_generate_section_content(...) -> str**
+  - Drives the core LLM-based section content generation process, with retry/truncation logic.
+- **_is_content_truncated(content: str, max_tokens: int) -> bool**
+  - Heuristically determines whether LLM output was truncated.
+- **_continue_truncated_content(...) -> str**
+  - When output is truncated, prompts the LLM to continue where it left off.
+- **_create_section_prompt(...) -> List**
+  - Forms the specific messages sent to the LLM, including system and user content.
+- **_ai_assemble_document(...) -> str**
+  - Uses AI to assemble document content, falling back to manual concatenation if any errors occur.
+- **_save_design_document(...)**
+  - Writes out an assembled document, adding an informational header.
+
+#### Utility Methods
+
+- **_create_langchain_tools(repo_path)**
+  - Prepares LangChain tool integrations for the AI, notably file access tools.
 
 ---
 
-#### Method summaries
+## Key Data Structures
 
-##### `initialize_design_documents(state: PipelineState) -> Dict[str, Any]`
-- Reads configuration to determine which design documents and sections to generate.
-- Builds initial `DesignDocumentationState`, comprising a list of `DesignDocument` and `DesignDocumentSection` objects.
-
-##### `generate_design_section(state: PipelineState) -> Dict[str, Any]`
-- Generates content for the current section of the current document using the LLM.
-- Maintains retry logic for failures and detects possible truncation to optionally continue the generation.
-
-##### `_prepare_section_context(...) -> str`
-- Assembles prior context (existing docs, prior design docs, previous sections) for inclusion in section prompts.
-
-##### `_generate_section_content(...) -> str`
-- Contains retry logic and supports "continuation" in case a section's content is truncated.
-
-##### `_is_content_truncated(content: str, max_tokens: int) -> bool`
-- Simple heuristic to detect if the AI generated content is truncated (ends abruptly or nears token limit).
-
-##### `_continue_truncated_content(...) -> str`
-- Handles prompting the LLM to continue and complete a truncated section.
-
-##### `_create_section_prompt(...) -> List`
-- Constructs the prompt passed to the LLM to generate a section.
-
-##### `_ai_assemble_document(...) -> str`
-- Uses the LLM to merge all sections into a well-formed document (title, transitions, conclusion, etc.).
-- Falls back to a simple concatenation if AI assembly fails.
-
-##### `assemble_design_document(state: PipelineState) -> Dict[str, Any]`
-- Calls `_ai_assemble_document()`, updates document state, appends to accumulated documentation context, and moves workflow to the next document.
-
-##### `_save_design_document(state, document, content)`
-- Saves the generated document as a Markdown file with a metadata header to disk.
-
-##### `_create_langchain_tools(repo_path: Path)`
-- Initializes tools (for e.g., codebase access) that can be used by the LLM through LangChain.
-
----
-
-### Important Types & Data Structures
-
-- **PipelineState**: Holds overall processing state, including design document state.
-- **DesignDocumentationState**: Tracks which documents/sections are completed and their context.
-- **DesignDocument**: Represents a single document (e.g., Architecture, API Spec) with sections.
-- **DesignDocumentSection**: Represents each section (with name, generation config, and generated content).
-- **DocumentationContext**: Context for documentation generation, drawn from existing docs and workflow state.
-
----
-
-### External Modules & Constants
-
-- `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT`, `SECTION_PROMPT_SYSTEM_MESSAGE`: System prompt templates for high-quality LLM prompting.
-- `TokenCounter`: Utility for estimating how many tokens a string will occupy in the LLM context window.
-- `create_file_tools`: Supplies AI with file/codebase introspection tools.
+- **PipelineState**: Tracks the end-to-end flow of the documentation pipeline (imported from `.models`).
+- **DesignDocumentationState**: Tracks progress and results for all documents.
+- **DesignDocument**: Represents a single logical document (with a list of sections).
+- **DesignDocumentSection**: Represents a section within a design document, holds template and output.
+- **TokenCounter**: Utility class for token counting (imported from `utilities.token_manager`).
 
 ---
 
 ## Dependencies
 
-### Imports and their roles
+### Internal
 
-- **LangChain Core**: For message and prompt templating & chaining (`langchain_core.*`).
-- **datetime**: For generated-on metadata in the document output.
-- **pathlib**: File path management for writing documentation to disk.
-- **Project internals**:
-    - `.models`: Pipeline and documentation state classes.
-    - `.prompts.*`: Predefined system prompts.
-    - `.utilities.token_manager`: Token counting utility.
-    - `.tools.lc_tools.lc_file_tools`: Codebase/file-examining tools for LLM.
-- **Configuration**: Expects config object providing `design_docs` structure with document and section enable/disable toggles, retry settings, etc.
+- **Configuration Module**: Expects object with `design_docs` dict (including documents, sections, retry settings).
+- **Models**: Uses several types from `.models` (`PipelineState`, `DesignDocument`, `DesignDocumentSection`, etc).
+- **Prompt Templates**: Imports various system prompts for use as LLM input.
+- **LangChain Core**: For message and prompt objects, and LLM invocation and tool bindings.
+- **Utility and Tools**: Uses `TokenCounter` for estimating output truncation and methods from `lc_file_tools` for AI tool access.
 
-### Upstream dependencies
+### External
 
-- Relies on a project pipeline that supplies LLM instances, configuration, and current processing state (`PipelineState`).
+- **LangChain**: Core LLM interaction and prompt toolkit (`langchain_core`).
+- **DateTime**: Timestamp generation for document metadata.
 
-### Downstream dependencies
+#### What Depends on This
 
-- Writes files to disk for continued use by manual review or subsequent documentation pipeline stages.
+- Higher-level orchestration code for docgen pipelines invokes methods on `DesignDocumentGenerator` to manage the design docs phase.
+- It is not itself an entrypoint and must be driven by a controller or pipeline state manager.
 
 ---
 
 ## Usage Examples
 
-### Example: Integration in a Pipeline
+### Initialization and Section Generation
 
 ```python
 from src.design_document_generator import DesignDocumentGenerator
 
-# Assumed pipeline setup
-llm = ...  # Some LLM instance (e.g., OpenAI, etc.)
-config = ...  # Project configuration with 'design_docs'
-doc_processor = ...  # Document processing utilities and context
-
+# Construct with your LLM, user config, and any postprocessing hooks
 generator = DesignDocumentGenerator(llm, config, doc_processor)
 
-# 1. Initialize design documentation state
-pipeline_state = ...
-result = generator.initialize_design_documents(pipeline_state)
-pipeline_state.design_documentation_state = result['design_documentation_state']
+# 1. Initialize documents based on project settings
+init_result = generator.initialize_design_documents(state)
+# state.design_documentation_state is now initialized
 
-# 2. Generate each section iteratively (may use within a loop)
-section_result = generator.generate_design_section(pipeline_state)
-pipeline_state.design_documentation_state = section_result['design_documentation_state']
+# 2. Generate each section in sequence
+while not all_sections_complete(state):
+    result = generator.generate_design_section(state)
+    # State is updated with generated content incrementally
 
-# 3. Once document is complete
-doc_result = generator.assemble_design_document(pipeline_state)
-pipeline_state.design_documentation_state = doc_result['design_documentation_state']
-
-# Documents are saved to disk in the specified output folder.
+# 3. When all sections are done, assemble final document
+assembly_result = generator.assemble_design_document(state)
+# Assembled file is saved to disk
 ```
 
 ---
 
-## Summary Table
+## Example Document Output Location
 
-| Feature                   | Description                                                                                         |
-|---------------------------|-----------------------------------------------------------------------------------------------------|
-| Initialization            | Loads docs/sections from config, initializing processing state.                                     |
-| Section Generation        | Prompts LLM for each section, assembles context, retries/truncation handling.                       |
-| Section Context           | Includes prior sections, prior docs, and imported user docs for context.                            |
-| Assembly                  | Uses LLM (or fallback) to create unified document with smooth transitions and introduction/conclusion. |
-| Output                    | Writes Markdown files including generation metadata headers.                                        |
-| Extensibility             | Designed for modular, multi-stage documentation workflows with pluggable AI and context providers.  |
+- Documents are written to: `<state.request.output_path>/design_documentation/<document_name>.md`
 
 ---
 
-## See Also
+## Notes
 
-- `models.py`: State and structure definitions for documentation generation.
-- `prompts`: Prompt and system message templates for LLM prompting.
-- `utilities/token_manager.py`: Token counting logic.
-- `tools/lc_tools/lc_file_tools.py`: Codebase utility tools for LLM use.
+- The generator is designed to be modular; you can plug in different document templates, retry/continuation heuristics, or LLM backends.
+- Existing documentation from the project can be injected as context to inform section generation.
+- Truncation and error handling are robust; if LLMs fail to assemble, content is always salvageable.
+- Logs to console with progress and errors for monitoring.
+- All methods mutate and return the pipeline state for stateless orchestration patterns.
 
 ---
 
@@ -179,8 +150,8 @@ pipeline_state.design_documentation_state = doc_result['design_documentation_sta
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: 1617d7d1776e06f322fc86995e03259e406ac94376ebb8629f61090982cf6c09
+file_hash: 770baf328becc167321fc77192e8efca3739f8850b82fbd1da226ce31976dec5
 relative_path: src\design_document_generator.py
-generation_date: 2025-06-11T11:18:08.862254
+generation_date: 2025-06-29T16:51:44.739304
 ```
 <!-- END GENERATION METADATA -->

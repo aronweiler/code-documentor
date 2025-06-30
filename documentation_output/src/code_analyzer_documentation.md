@@ -4,93 +4,164 @@
 
 # Documentation for src\code_analyzer.py
 
-# Code Analyzer Documentation
+# code_analyzer.py
 
 ## Purpose
 
-The `code_analyzer.py` file is designed to analyze code repositories, extract relevant code files, and provide insights into the file structure for documentation purposes. It is a part of a larger system that likely involves generating documentation for codebases.
+This module provides functionality for analyzing code repositories, primarily for the purpose of preparing source files for automated documentation generation. It is responsible for scanning a given repository, filtering and extracting relevant code files according to configurable parameters, and analyzing overall file structure to supply context useful for documentation tools.
+
+---
 
 ## Functionality
 
-### `CodeAnalyzer` Class
+### Main Class: `CodeAnalyzer`
 
-The `CodeAnalyzer` class is the primary component of this file. It is responsible for scanning a code repository, identifying files that should be documented, reading their contents, and analyzing the overall structure of the codebase.
+The `CodeAnalyzer` class is the core of this module, offering the following capabilities:
+
+- **Repository Scanning**: Traverses a codebase recursively to locate files relevant for documentation.
+- **File Filtering**: Selects files by extension and path, supporting exclusion patterns and empty-file skipping.
+- **File Reading**: Robustly reads file contents using multiple encoding fallbacks.
+- **Structure Analysis**: Aggregates statistics about the codebase, such as files by extension, by directory, and the largest files.
 
 #### Initialization
 
-- **`__init__(self, config: PipelineConfig)`**: Initializes the `CodeAnalyzer` with a configuration object of type `PipelineConfig`. This configuration dictates how files are processed, including supported file extensions and patterns to exclude.
+```python
+def __init__(self, config: PipelineConfig):
+    self.config = config
+```
 
-#### Main Methods
+Creates an analyzer instance with a provided configuration, typically specifying file types to include/exclude.
 
-- **`scan_repository(self, repo_path: Path) -> List[CodeFile]`**: Scans the specified repository path and returns a list of `CodeFile` objects representing the files to be documented. It filters files based on supported extensions and exclusion patterns defined in the configuration.
+#### scan_repository
 
-- **`_should_include_file(self, file_path: Path, supported_extensions: List[str], exclude_patterns: List[str]) -> bool`**: Determines whether a file should be included in the documentation process. It checks the file's extension, exclusion patterns, and ensures the file is not empty.
+```python
+def scan_repository(self, repo_path: Path) -> List[CodeFile]:
+```
+- **Purpose**: Scans `repo_path` for source files of interest.
+- **Returns**: List of `CodeFile` objects, sorted by their relative path.
+- **Logic**:
+  - Reads supported extensions and exclude patterns from configuration.
+  - Recursively traverses all files (non-directory) beneath `repo_path`.
+  - Checks each file via `_should_include_file`.
+  - Reads included files' content and wraps them as `CodeFile` instances.
 
-- **`_read_code_file(self, file_path: Path) -> str`**: Reads the content of a code file using various encodings to handle different text formats. If all standard encodings fail, it attempts to read the file in binary mode with UTF-8 decoding and error handling.
+#### _should_include_file
 
-- **`analyze_file_structure(self, code_files: List[CodeFile]) -> dict`**: Analyzes the structure of the provided code files. It returns a dictionary containing the total number of files, a breakdown by file extension and directory, and a list of the largest files by content size.
+```python
+def _should_include_file(self, file_path: Path, supported_extensions: List[str], exclude_patterns: List[str]) -> bool:
+```
+- **Purpose**: Central logic for file inclusion/exclusion.
+- **Checks**:
+  - File is accessible and is a regular file.
+  - Extension is in supported list (if provided).
+  - Path does not match any exclude pattern.
+  - File is not empty.
+
+#### _read_code_file
+
+```python
+def _read_code_file(self, file_path: Path) -> str:
+```
+- **Purpose**: Reads a file with robustness to encoding issues.
+- **Approach**:
+  - Tries several common encodings (`utf-8`, `utf-16`, `cp1252`, `iso-8859-1`) in sequence.
+  - As a fallback, reads raw bytes and decodes with utf-8, ignoring errors.
+
+#### analyze_file_structure
+
+```python
+def analyze_file_structure(self, code_files: List[CodeFile]) -> dict:
+```
+- **Purpose**: Produces an overall structure summary of scanned code files.
+- **Returns**: Dictionary with:
+  - `total_files`: Count of files found.
+  - `by_extension`: Frequency of files per extension.
+  - `by_directory`: Frequency of files per directory.
+  - `largest_files`: The 10 largest files (by content length), as tuples of `(relative_path, size)`.
+
+---
 
 ## Key Components
 
-- **Classes**:
-  - `CodeAnalyzer`: Main class for analyzing code repositories.
+### Classes & Types
 
-- **Functions**:
-  - `scan_repository`
-  - `_should_include_file`
-  - `_read_code_file`
-  - `analyze_file_structure`
+- **`CodeAnalyzer`**: Main class performing scanning, file selection, content reading, and structure analysis.
+- **`CodeFile`** (`from .models`): Dataclass or model representing a code file's path, content, extension, and relative path.
+- **`PipelineConfig`** (`from .models`): Configuration object specifying how files should be processed (e.g., supported extensions, exclude patterns).
 
-- **Variables**:
-  - `config`: Holds the configuration for file processing.
-  - `supported_extensions`: List of file extensions to include.
-  - `exclude_patterns`: Patterns to exclude files from processing.
+### Configuration
+
+Expects `PipelineConfig` to supply at least:
+- `file_processing['supported_extensions']`: List of file suffixes to include.
+- `file_processing['exclude_patterns']`: List of path substrings to filter out.
+
+---
 
 ## Dependencies
 
-- **Internal**:
-  - `CodeFile`: A model representing a code file, imported from `.models`.
-  - `PipelineConfig`: A configuration model for the pipeline, imported from `.models`.
+### Imports
 
-- **External**:
-  - `os`: Used for operating system dependent functionality.
-  - `Path` from `pathlib`: Used for filesystem path manipulations.
-  - `List` from `typing`: Used for type hinting.
+- `os`, `pathlib.Path`: Filesystem traversal and manipulation.
+- `typing.List`: Type hinting for collections.
+- `.models.CodeFile`, `.models.PipelineConfig`: Local project models for representing code files and pipeline configuration.
+
+### What Depends on This
+
+- Any component of the documentation pipeline needing to enumerate or analyze files in a source repository.
+- Documentation generation or processing logic that requires input as `CodeFile` objects.
+
+---
 
 ## Usage Examples
 
+### Basic Usage
+
 ```python
 from pathlib import Path
-from .models import PipelineConfig
+from src.code_analyzer import CodeAnalyzer
+from src.models import PipelineConfig
 
-# Example configuration
-config = PipelineConfig(file_processing={
-    "supported_extensions": [".py", ".md"],
-    "exclude_patterns": ["test", "docs"]
-})
+config = PipelineConfig(
+    file_processing={
+        'supported_extensions': ['.py', '.js'],
+        'exclude_patterns': ['test/', 'migrations/']
+    }
+)
 
-# Initialize the analyzer with the configuration
 analyzer = CodeAnalyzer(config)
+repo_path = Path('/path/to/repository')
 
-# Scan a repository
-repo_path = Path("/path/to/repository")
+# Scan repository for code files
 code_files = analyzer.scan_repository(repo_path)
 
-# Analyze the file structure
+# Analyze file structure
 structure = analyzer.analyze_file_structure(code_files)
 
-# Output the analysis
-print(structure)
+print(f"Total code files: {structure['total_files']}")
+print("Files by extension:", structure['by_extension'])
+print("Largest files:", structure['largest_files'])
 ```
 
-This example demonstrates initializing the `CodeAnalyzer` with a configuration, scanning a repository for code files, and analyzing the file structure to gain insights into the codebase.
+---
+
+## Notes
+
+- Expects the repository path to exist and be a directory; otherwise, it raises a `ValueError`.
+- Warnings (via `print`) are emitted if files cannot be read, but scanning continues.
+- Encodings are tried sequentially to maximize successful reading of source files.
+
+---
+
+## Summary
+
+`code_analyzer.py` is a utility module designed to robustly scan code repositories for files to document, implementing configurable filtering, content retrieval, and structure analysis. It forms an essential component in an automated documentation or analysis pipeline for codebases.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: dd6617d21d2d83b69fb28e8be85dace0eae424eee391e2515523b80a40cf7ac7
+file_hash: f8bdbfd26916ff0c37fce9ace6f6952fd5c870503b1cb9b8474b94f4d7810839
 relative_path: src\code_analyzer.py
-generation_date: 2025-06-10T20:41:21.574567
+generation_date: 2025-06-29T16:51:13.270561
 ```
 <!-- END GENERATION METADATA -->

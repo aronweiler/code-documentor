@@ -4,141 +4,170 @@
 
 # Documentation for src\models.py
 
-# `models.py`
+# models.py
 
 ## Purpose
 
-This file defines the data models used throughout the documentation generation pipeline. It serves as the schema layer for request structures, processing states, code file encapsulation, documentation formatting, design document progress, and final outputs. These models ensure type safety, validation, and clear interfaces between the various components of the system.
-
-## Functionality
-
-The primary functionality of this file is to provide [Pydantic-based](https://pydantic-docs.helpmanual.io/) classes that enable:
-
-- **Typed configuration** for pipeline settings and options.
-- **Structured request/response objects** for documentation generation processes.
-- **Models for code files, documentation context, and generated results**.
-- **Tracking and organizing design documentation, guides, and state during multi-step or multi-file/section processes**.
-
-Each class is a subtype of `pydantic.BaseModel`, ensuring automatic type validation and serialization/deserialization as needed.
-
-## Key Components
-
-### 1. **PipelineConfig**
-   - Defines structured configuration for the documentation pipeline (e.g., logging, model, token limits, I/O paths, design docs, templates).
-
-### 2. **DocumentationRequest**
-   - Represents a request for generating documentation, including repository and output info, config, and flags for what to generate.
-
-### 3. **CodeFile**
-   - Encapsulates a code file's path, content, extension, and its relative repository path.
-
-### 4. **DocumentationContext**
-   - Holds existing documentation context, token usage, summary state, and original docs.
-
-### 5. **DocumentationResult**
-   - Represents the result of running documentation generation on a file, including output, success flag, and error messages.
-
-### 6. **DocumentationGuideEntry & DocumentationGuide**
-   - GuideEntry: Summarizes a documentation file (link, summary, corresponding source file).
-   - Guide: Collects all entries, with metadata (count, date).
-
-### 7. **DesignDocumentSection & DesignDocument**
-   - Section: Individual section of a design doc, with status, content, template, etc.
-   - Document: Entire design doc, comprised of sections, with result metadata.
-
-### 8. **DesignDocumentationState**
-   - Tracks the multi-step progress of generating design documents, including which sections/docs are completed and accumulated context.
-
-### 9. **PipelineState**
-   - Aggregates the state of the documentation pipeline, including input request, loaded code files, current progress, results, guide, and design doc state.
-
-## Dependencies
-
-- **[pydantic](https://pydantic-docs.helpmanual.io/)**: Used for strict, type-checked models and validation.
-- **typing**: Typing annotations for dictionaries, lists, optionals, etc.
-- **pathlib.Path**: Path object for representing filesystem locations.
-
-### **What depends on this file**:
-
-- The rest of the pipeline relies on these models for data validation, state tracking, and structured communication.
-- Any service, function, or module that interacts with code files, design documentation, or documentation generation requests will use these models.
-
-## Usage Examples
-
-Typical usage involves constructing and passing model instances between pipeline components:
-
-```python
-from pathlib import Path
-from src.models import (
-    PipelineConfig, DocumentationRequest, CodeFile, DocumentationContext,
-    PipelineState
-)
-
-# Example: Create a pipeline config
-config = PipelineConfig(
-    logging={"level": "info"},
-    model={"name": "gpt-4"},
-    token_limits={"max": 2048},
-    file_processing={"ext": [".py"]},
-    output={"format": "markdown"}
-)
-
-# Example: Request to generate documentation
-request = DocumentationRequest(
-    repo_path=Path("/repo"),
-    docs_path=Path("/repo/docs"),
-    output_path=Path("/repo/generated_docs"),
-    config=config,
-    file_docs=True,
-    design_docs=False,
-    guide=True
-)
-
-# Example: Represent a code file
-code_file = CodeFile(
-    path=Path("/repo/src/example.py"),
-    content="def foo(): ...",
-    extension=".py",
-    relative_path="src/example.py"
-)
-
-# Example: Create the processing state
-state = PipelineState(
-    request=request,
-    existing_docs=DocumentationContext(
-        content="Existing doc content", token_count=100
-    ),
-    code_files=[code_file]
-)
-```
-
-## Summary Table of Models
-
-| Class Name                  | Purpose/Scope                                              |
-|-----------------------------|-----------------------------------------------------------|
-| PipelineConfig              | Pipeline configuration options                            |
-| DocumentationRequest        | Request to generate documentation                         |
-| CodeFile                    | Representation of an individual code file                 |
-| DocumentationContext        | Information about existing documentation                  |
-| DocumentationResult         | Result of doc generation on a file                        |
-| DocumentationGuideEntry     | Entry in documentation guide                              |
-| DocumentationGuide          | Overall documentation guide (table of contents)           |
-| DesignDocumentSection       | Individual section for design docs                        |
-| DesignDocument              | Assembled design document for a topic/component           |
-| DesignDocumentationState    | Tracks progress/state of design documentation generation  |
-| PipelineState               | Main processing state of the documentation pipeline       |
+This file defines all the core data models used throughout the documentation generation pipeline. It specifies configuration schemas, request/response models, tracking classes, and process state models for managing and orchestrating the generation of documentation (including code-level docs, guides, and design documents) in a structured, type-safe way. By centralizing the application models, it streamlines configuration, state tracking, and data validation across the documentation system.
 
 ---
 
-**Note:**  
-All models utilize Pydantic's `BaseModel`, which means fields are strictly validated on creation and provide built-in `.dict()`, `.json()`, and other utility methods for easy use throughout the pipeline.
+## Functionality
+
+- **Configuration**: Defines how the pipeline settings are structured and validated.
+- **Pipeline Coordination**: Models requests to generate documentation and tracks the processing state.
+- **Code and Documentation Artifacts**: Represents files, generated documentation, and their metadata.
+- **Guide and Design Doc Support**: Structures for guides, design documents, and incremental update tracking.
+- **Change Detection**: Mechanisms to support incremental documentation updates by tracking file/guide changes.
+
+---
+
+## Key Components
+
+### 1. PipelineConfig
+
+A Pydantic model that describes all the configuration parameters for running the documentation pipeline. Includes keys for logging, model, token limits, output, templates, and design documentation settings, all using generic dictionaries for flexible extension.
+
+### 2. DocumentationRequest
+
+Represents a request for documentation. Bundles paths, pipeline config, which docs to generate, and relevant options for controlling output scope.
+
+**Fields:**
+- `repo_path` (Path): Path to the code repository.
+- `docs_path`, `output_path` (Optional[Path], Path): Optional/current docs location and required output directory.
+- `config` (PipelineConfig): The main configuration object.
+- Various booleans (`file_docs`, `design_docs`, etc.) to toggle outputs.
+
+### 3. CodeFile
+
+A single code file representation with path, content, file extension, and relative location for tracking and documentation.
+
+### 4. DocumentationContext
+
+Holds the current state/context of existing documentation, including content, token count, summary flag, and any original documentation texts.
+
+### 5. DocumentationResult
+
+Represents the outcome of generating documentation for one file, including success status and error reporting.
+
+### 6. DocumentationGuideEntry & DocumentationGuide
+
+- **DocumentationGuideEntry**: One entry in a high-level doc guide, with file paths and a summary.
+- **DocumentationGuide**: The entire structure/manifest of generated doc guide entries, plus file count and generation date.
+
+### 7. DesignDocumentSection, DesignDocument, DesignDocumentationState
+
+- **DesignDocumentSection**: A single section within a design document, tracking its template, status, retries, and results.
+- **DesignDocument**: A complete design document with multiple sections, optional file output, and result status.
+- **DesignDocumentationState**: Keeps track of the sequence and status of design document generation throughout the process.
+
+### 8. FileMetadata, GuideMetadata, ChangeSet
+
+- **FileMetadata**: Tracks source/doc file paths, modification timestamps, hashing, and guide entry generation for incremental update detection.
+- **GuideMetadata**: System-wide info and versioning for the doc guide, centrally tracking all files and structural template changes.
+- **ChangeSet**: Models what files were added/changed/removed or if a full rebuild is necessary, for efficient, incremental documentation updates.
+
+### 9. PipelineState
+
+The master process tracker, bringing together the current request, existing docs, code files, in-progress or completed results, index states, and guides/design docs for end-to-end orchestration.
+
+---
+
+## Dependencies
+
+### Required Packages
+
+- **pydantic**: Used for data modeling and validation via the `BaseModel` and `Field` utilities.
+- **typing**: Standard library types (`Dict`, `Any`, `List`, `Optional`) for type hints.
+- **pathlib**: The `Path` class for safely handling filesystem paths.
+
+### Internal/External Coupling
+
+- Depends on: Other modules that consume or produce settings, process states, code files, or documentation results.
+- Used By: The main documentation pipeline, file processing, incremental rebuild mechanisms, testing, and CLI/main logic scripts that marshal requests or process documentation.
+
+---
+
+## Usage Examples
+
+Below are some illustrative use cases for these models in a typical documentation system.
+
+### Instantiate a PipelineConfig
+
+```python
+from models import PipelineConfig
+
+config = PipelineConfig(
+    logging={'level': 'INFO'},
+    model={'name': 'gpt-4'},
+    token_limits={'max_doc_tokens': 2048},
+    # ...
+)
+```
+
+### Requesting documentation generation
+
+```python
+from models import DocumentationRequest
+from pathlib import Path
+
+request = DocumentationRequest(
+    repo_path=Path('/repo/source'),
+    docs_path=Path('/repo/docs'),
+    output_path=Path('/docs/output'),
+    config=config,
+    file_docs=True,
+    guide=True
+)
+```
+
+### Representing a code file for processing
+
+```python
+file = CodeFile(
+    path=Path('src/main.py'),
+    content="print('hello world')",
+    extension='py',
+    relative_path='src/main.py'
+)
+```
+
+### Collecting the state of a documentation run
+
+```python
+from models import PipelineState
+
+state = PipelineState(
+    request=request,
+    existing_docs=DocumentationContext(content='', token_count=0),
+    code_files=[file],
+    results=[],
+)
+```
+
+### Tracking incremental documentation changes
+
+```python
+changeset = ChangeSet(
+    new_files=['src/new_module.py'],
+    modified_files=['src/main.py'],
+    deleted_files=['src/old_module.py'],
+    force_full_rebuild=False
+)
+```
+
+---
+
+## Summary
+
+`models.py` is the single point of truth for configuration, request types, file representations, result formats, process and guide state, and change tracking for the documentation generation pipeline, leveraging type-safe, schema-validated Pydantic models for maintainable and robust orchestration of the documentation system.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: fe954cd8cbe55d1ec329010565f30c29effae4b7b78d00590c6d6df7f8faf096
+file_hash: f2ca90a5f63c8f940e2b792f077f313027cfb50faa57f7bb58b50bff63bbeb94
 relative_path: src\models.py
-generation_date: 2025-06-11T11:18:44.444490
+generation_date: 2025-06-29T16:52:36.080310
 ```
 <!-- END GENERATION METADATA -->

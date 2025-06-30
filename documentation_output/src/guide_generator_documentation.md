@@ -4,180 +4,168 @@
 
 # Documentation for src\guide_generator.py
 
-# GuideGenerator (src/guide_generator.py) Documentation
+# guide_generator.py
 
 ## Purpose
 
-The `GuideGenerator` class automates the creation of a high‐level documentation guide for a codebase’s generated documentation files. It can:
-
-- Load existing documentation results (markdown files) with metadata.
-- Clean and parse the LLM‐generated content.
-- Summarize each documentation file via a language model (Anthropic or OpenAI).
-- Assemble and save a single “Documentation Guide” that indexes and summarizes all docs.
-
-This file exists to streamline the final step of a documentation pipeline: producing a human‐friendly guide that points developers to the right markdown file for each source code component.
+The `guide_generator.py` file is responsible for creating, updating, and managing a comprehensive documentation guide for a codebase. It automates the aggregation of documentation files into a single navigable guide, facilitates incremental guide regeneration when code changes occur, and ensures that up-to-date summaries and references to detailed documentation files are available. This is primarily intended to assist developers in easily discovering relevant documentation throughout a repository.
 
 ---
 
 ## Functionality
 
-1. **Initialization**
-   - `__init__(llm, config, doc_processor)`: Store references to:
-     - `llm`: A chat LLM instance (either `ChatAnthropic` or `ChatOpenAI`).
-     - `config`: Pipeline configuration (`PipelineConfig`).
-     - `doc_processor`: Utility for token counting & context prep (`DocumentProcessor`).
-   - Sets up a module‐level logger.
+The main class in this file is `GuideGenerator`, which offers methods to:
 
-2. **Loading Existing Documentation**
-   - `load_existing_documentation(state) → Dict[str,Any]`  
-     Entry point for re‐using already‐generated docs.  
-     - Calls `load_existing_documentation_results` to gather `DocumentationResult` objects.
-     - Reads raw markdown files (via `doc_processor.load_existing_docs`) for context if needed.
-     - Returns a dict with keys:  
-       - `existing_docs`: raw docs content  
-       - `results`: list of `DocumentationResult`  
-       - `code_files`: empty list (since not processing source)  
-       - `current_file_index`: index offset  
-       - `completed`: flag
+- **Load existing documentation files**
+- **Generate documentation summaries using LLMs (Large Language Models)**
+- **Create a top-level documentation guide** (mapping code files to their documentation and a summary)
+- **Detect file/documentation changes for incremental guide updates**
+- **Save and load guides and associated metadata**
 
-   - `load_existing_documentation_results(state) → List[DocumentationResult]`  
-     Scans `state.request.output_path` for `*_documentation.md` files and for each:
-     - Extracts YAML or HTML metadata (`extract_metadata_from_doc`).
-     - Reads and “cleans” the markdown by stripping original code blocks and metadata.
-     - Wraps content into `DocumentationResult(file_path, documentation, success, error_message)`.
-     - Logs successes and failures.
-
-3. **Generating the Documentation Guide**
-   - `generate_documentation_guide(state) → DocumentationGuide`  
-     - Filters successful docs from `state.results`.
-     - For each doc:
-       - Locates the corresponding markdown file under `output_path`.
-       - Reads & cleans it (removing headers, code blocks, metadata).
-       - Calls `_generate_doc_summary(clean_content, relative_source_path)` to produce a concise summary.
-       - Constructs a `DocumentationGuideEntry(doc_file_path, summary, original_file_path)`.
-     - Aggregates entries into a `DocumentationGuide(entries, total_files, generation_date)`.
-
-4. **LLM‐Powered Document Summarization**
-   - `_generate_doc_summary(doc_content, file_path) → str`  
-     - Builds a chat prompt using a system message (`GENERATE_DOC_SUMMARY_SYSTEM_MESSAGE`) and the cleaned doc content.
-     - Invokes the LLM via `llm.invoke(messages)`.
-     - Parses the response to extract `summary`; falls back to a generic message on failure.
-
-5. **Saving the Guide to Disk**
-   - `save_documentation_guide(state, guide) → None`  
-     - Renders a `documentation_guide.md` file under `state.request.output_path`.
-     - Includes metadata (generation date, total files) and per‐entry summaries.
-     - Overwrites or creates the guide file automatically.
-
-6. **Metadata Extraction**
-   - `extract_metadata_from_doc(doc_path) → Optional[Dict[str,str]]`  
-     - Reads a markdown file and uses regex to find either:
-       - A YAML block inside HTML comments:  
-         ```yaml
-         <!-- GENERATION METADATA -->
-         ```yaml
-         key: value
-         ```
-         <!-- END GENERATION METADATA -->
-         ```
-       - A simpler HTML comment block:  
-         ```html
-         <!-- GENERATION_METADATA
-         key: value
-         -->
-         ```
-     - Returns a dict of metadata fields (e.g., `relative_path`).
+The generator ensures both full-guide regeneration and efficient, incremental updates when only a subset of files or documentation requires modification.
 
 ---
 
 ## Key Components
 
-- **Classes & Data Models**
-  - `GuideGenerator`  
-  - **Models Imported**  
-    - `DocumentationGuide` (holds guide entries, total count, timestamp)  
-    - `DocumentationGuideEntry` (per‐file summary + paths)  
-    - `DocumentationResult` (raw load results + success flag)  
-    - `PipelineConfig`, `PipelineState` (pipeline orchestration)
+### Main Class: `GuideGenerator`
 
-- **External Utilities**
-  - `DocumentProcessor` (pre‐existing class for token counting & context loading)
-  - `ChatAnthropic` / `ChatOpenAI` (LLM interfaces)
-  - `ChatPromptTemplate`, `SystemMessage`, `HumanMessage` (prompt construction)
-  - `GENERATE_DOC_SUMMARY_SYSTEM_MESSAGE` (system prompt text for summary LLM calls)
+#### Initialization
 
-- **Logging & Error Handling**
-  - Uses Python’s `logging` module
-  - Prints warnings & errors to console and logger
+```python
+GuideGenerator(
+    llm: Union[ChatAnthropic, ChatOpenAI],
+    config: PipelineConfig,
+    doc_processor: DocumentProcessor,
+)
+```
+- **llm:** An instantiated ChatOpenAI or ChatAnthropic LLM for summarization
+- **config:** Pipeline configuration with runtime settings
+- **doc_processor:** Tool for loading and contextualizing documentation/code
+
+#### Principal Methods
+
+- **load_existing_documentation(state)**
+  - Loads already-generated documentation files for a project.
+  - Returns a structured result containing loaded docs and their metadata.
+
+- **load_existing_documentation_results(state)**
+  - Scans for existing generated documentation markdown files, parsing their metadata and content into `DocumentationResult` objects.
+
+- **generate_documentation_guide(state)**
+  - Processes all documentation results to create `DocumentationGuideEntry` objects.
+  - Uses the LLM to generate concise summaries for each file's doc.
+  - Returns a `DocumentationGuide` aggregating all entries and metadata.
+
+- **_generate_doc_summary(doc_content, file_path)**
+  - Uses the LLM to produce a concise summary based on generated documentation content.
+
+- **save_documentation_guide(state, guide)**
+  - Writes the `DocumentationGuide` (as Markdown) to disk in the documentation output directory.
+
+- **extract_metadata_from_doc(doc_path)**
+  - Extracts metadata (YAML or HTML-style) from a documentation file for traceability and mapping.
+
+##### Incremental Guide Support
+
+- **detect_guide_changes(state)**
+  - Detects which documentation files have changed or need guide updates using `GuideMetadataManager`.
+  - Stores a `ChangeSet` in state for later incremental guide regeneration.
+
+- **generate_incremental_guide(state)**
+  - Uses a `ChangeSet` to only update the parts of the guide corresponding to modified/new/deleted files.
+  - Merges updates into the existing guide.
+  - Backs off to a full regeneration if major structure changes are detected.
+
+- **_load_existing_guide(state)**
+  - Attempts to load and parse an existing guide from disk.
+
+- **_parse_guide_entries(guide_content)**
+  - Parses previously generated entries from the Markdown guide.
+
+- **_generate_single_guide_entry(state, result)**
+  - Generates a guide entry for a single result (including reprocessing summary via LLM).
+
+- **_clean_documentation_content(doc_content)**
+  - Utility to remove code blocks and metadata from documentation for better summarization.
+
+- **_generate_guide_entry_for_file(state, relative_path)**
+  - Generates a guide entry given a file path (for cases not tracked by results).
 
 ---
 
-## Dependencies
+## Key Dependencies
 
-- Standard Library: `datetime`, `hashlib` (unused), `logging`, `re`, `pathlib.Path`, `typing`
-- Third‐Party:
-  - `langgraph.graph` (imports `StateGraph`, `END` but not used directly here)
-  - `langchain_openai.ChatOpenAI`
-  - `langchain_anthropic.ChatAnthropic`
-  - `langchain_core.messages.{HumanMessage,SystemMessage}`
-  - `langchain_core.prompts.ChatPromptTemplate`
-- Local Modules:
-  - `./prompts/generate_doc_summary_system_message.GENERATE_DOC_SUMMARY_SYSTEM_MESSAGE`
-  - `./models` (pipeline & documentation data models)
-  - `./document_processor.DocumentProcessor`
+- **langchain_openai, langchain_anthropic:** For invoking LLMs to summarize documentation
+- **langgraph.graph:** For orchestration (imported but not directly used in this file)
+- **DocumentProcessor, GuideMetadataManager:** Utility classes/modules internal to the project
+- **models.py:** Provides classes such as `DocumentationGuide`, `DocumentationGuideEntry`, `PipelineState`, `DocumentationResult`, `ChangeSet`
+- **prompts.generate_doc_summary_system_message:** Provides the prompt system message for summaries
 
-**Downstream Dependents**:  
-This class is intended to be invoked by a higher‐level pipeline orchestrator (not shown) that manages `PipelineState` transitions.
+**Standard library:** Uses typical modules for I/O, path management, logging, datetime, regex, and typing.
+
+**This file is depended upon by:** Other modules in the project that orchestrate pipeline execution, documentation aggregation routines, and developer-facing reporting tools.
 
 ---
 
 ## Usage Examples
 
+### Full Documentation Guide Generation
+
 ```python
-from pathlib import Path
-from langchain_openai import ChatOpenAI
-from myproject.document_processor import DocumentProcessor
-from myproject.models import PipelineConfig, PipelineState
+# Assume 'llm', 'config', and 'doc_processor' are properly instantiated.
+generator = GuideGenerator(llm, config, doc_processor)
+pipeline_state = ...  # Prepared PipelineState, including output and repo paths
 
-# 1. Initialize dependencies
-llm = ChatOpenAI(model_name="gpt-4", temperature=0.2)
-config = PipelineConfig(...)        # your pipeline settings
-doc_processor = DocumentProcessor(config)
+# Generate a guide from all documentation results
+guide = generator.generate_documentation_guide(pipeline_state)
 
-# 2. Build pipeline state (e.g., after individual docs generation)
-state = PipelineState(
-    request=PipelineRequest(
-        repo_path=Path("/path/to/repo"),
-        output_path=Path("/path/to/repo/docs"),
-        docs_path=Path("/path/to/repo/old_docs"),
-        ...
-    ),
-    results=[ ... ],  # list of DocumentationResult from prior step
-)
+# Save it for team consumption
+generator.save_documentation_guide(pipeline_state, guide)
+```
 
-# 3. Create GuideGenerator
-guide_gen = GuideGenerator(llm, config, doc_processor)
+### Incremental Guide Updates After Code Change
 
-# 4a. Optionally re-load existing docs
-load_context = guide_gen.load_existing_documentation(state)
+```python
+# Detect which files have changed or need guide updates
+changeset = generator.detect_guide_changes(pipeline_state)
 
-# 4b. Generate fresh documentation guide
-docs_guide = guide_gen.generate_documentation_guide(state)
+# Generate only the updated guide entries
+incremental_guide = generator.generate_incremental_guide(pipeline_state)
 
-# 5. Persist to disk
-guide_gen.save_documentation_guide(state, docs_guide)
+# Save the updated guide
+generator.save_documentation_guide(pipeline_state, incremental_guide)
+```
+
+### Loading Existing Documentation and Guides
+
+```python
+existing_docs_info = generator.load_existing_documentation(pipeline_state)
+existing_guide = generator._load_existing_guide(pipeline_state)
+```
+
+### Extracting Metadata from a Documentation File
+
+```python
+meta = generator.extract_metadata_from_doc(Path("docs/my_code_documentation.md"))
 ```
 
 ---
 
-By leveraging `GuideGenerator`, teams can automate the final assembly of their auto‐generated documentation, ensuring every component has an indexed summary in a single, navigable markdown guide.
+## Additional Notes
+
+- The class assumes markdown-based documentation files generated for individual code files, each containing a machine-readable metadata block.
+- Summaries for the guide are generated via LLM invocation for consistency and accuracy.
+- Incremental guide functions optimize regeneration, avoiding expensive recomputation when code/docs churn is localized.
+- Errors and warnings are robustly logged.
+- The design is modular and extensible, supporting different LLM backends for summary generation.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: 51db568e62bf13cd69f9b5f356f3d27fee0ba6b155752894b3f1504ab87b9fe6
+file_hash: ec5dfa87f9aa4c4ff3249b5f513731f813db8e794537d1ae40be596f34ba2baf
 relative_path: src\guide_generator.py
-generation_date: 2025-06-10T22:38:23.633587
+generation_date: 2025-06-29T16:52:05.643507
 ```
 <!-- END GENERATION METADATA -->
