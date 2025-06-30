@@ -55,18 +55,6 @@ file_processing:
     - "__init__.py"
     - "package-lock.json"
     - "alembic"
-    - __pycache__
-    - node_modules
-    - .git
-    - dist
-    - .claude
-    - build
-    - .mypy_cache
-    - venv
-    - .venv
-    - __init__.py
-    - package-lock.json
-    - alembic
 
 # Output Configuration
 output:

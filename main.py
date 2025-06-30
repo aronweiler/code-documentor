@@ -125,6 +125,7 @@ def run_documentation_generation(args):
     print(f"📝 File docs: {'Yes' if args.file_docs else 'No'}")
     print(f"🎨 Design docs: {'Yes' if args.design_docs else 'No'}")
     print(f"🎯 Documentation guide: {'Yes' if args.guide else 'No'}")
+    print(f"🔄 Force full guide regeneration: {'Yes' if args.force_full_guide else 'No'}")
     print(f"⚙️ Config: {args.config}")
     print()
 
@@ -138,7 +139,7 @@ def run_documentation_generation(args):
             file_docs=args.file_docs,
             design_docs=args.design_docs,
             guide=args.guide,
-            force_full_guide=getattr(args, 'force_full_guide', False),
+            force_full_guide=args.force_full_guide,
         )
 
         # Print summary

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "therapy-link-docs": {
+      "command": "/mnt/h/repos/code-documentor/.venv/bin/python",
+      "args": ["/mnt/h/repos/code-documentor/mcp_server.py", "/mnt/h/repos/therapy-link"],
+      "cwd": "/mnt/h/repos/code-documentor"
+    }
+  }
+}

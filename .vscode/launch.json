@@ -29,6 +29,26 @@
         "--docs-path", "H:\\repos\\therapy-link\\docs",
         "--file-docs",
         "--guide",
+        "--force-full-guide",
+        "--verbose"
+      ],
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
+    },
+    {
+      "name": "Generate All Docs for Therapy-Link (Linux)",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      "args": [
+        "generate",
+        "--repo-path", "/mnt/h/repos/therapy-link",
+        "--docs-path", "/mnt/h/repos/therapy-link/docs",
+        "--file-docs",
+        "--guide",
         "--verbose"
       ],
       "console": "integratedTerminal",
