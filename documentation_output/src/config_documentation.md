@@ -2,33 +2,22 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/config.py
+# Documentation for src\config.py
 
-# src/config.py
+# config.py
 
 ## Purpose
 
-This module provides configuration management for the project, including:
-
-- Loading configuration settings from a YAML file (`config.yaml` by default).
-- Managing sensitive environment variables, such as API keys, using `.env` files.
-- Supplying model and provider-specific configuration settings to the application.
-
-It improves the separation of configuration from code, centralizing environment-sensitive values and pipeline settings for easier development, deployment, and maintenance.
-
----
+The `config.py` file provides configuration management for your application. It enables the loading and parsing of configuration data from a YAML file and environment variables, particularly for API keys and model-related settings. This centralizes configuration handling for consistent access across the project and enforces best practices for managing sensitive credentials.
 
 ## Functionality
 
-The key functionality is encapsulated in the `ConfigManager` class, which:
+The core logic is encapsulated in the `ConfigManager` class, which handles:
 
-1. Loads and parses the main configuration YAML file according to a structured `PipelineConfig` model.
-2. Loads environment variables from the `.env` file on initialization using `python-dotenv`.
-3. Provides methods to:
-    - Safely retrieve API keys for different providers (OpenAI, Anthropic, Azure OpenAI, etc.).
-    - Combine static YAML configuration with dynamic, secure API keys and optional Azure-specific environment settings.
-
----
+- Loading persistent configuration from a YAML file (default: `config.yaml`).
+- Loading environment variables (from a `.env` file using `python-dotenv`).
+- Providing convenient access to API keys for supported providers (OpenAI, Anthropic, Azure OpenAI).
+- Assembling a comprehensive model configuration dictionary, optionally including additional provider-specific values.
 
 ## Key Components
 
@@ -36,124 +25,98 @@ The key functionality is encapsulated in the `ConfigManager` class, which:
 
 #### `ConfigManager`
 
-**Description:**  
-Manages the lifecycle of application configuration, including loading YAML config files and injecting API keys from environment variables. Can be extended to support other providers or configuration sources.
-
-**Constructor:**
-
-- `__init__(self, config_path: str = "config.yaml")`:  
-  Initializes `ConfigManager` and loads environment variables from `.env`.  
-  - `config_path`: Path to the configuration YAML file. Defaults to `config.yaml`.
+Manages all aspects of application configuration, including YAML loading and environment variable access.
 
 **Methods:**
 
-- `load_config(self) -> PipelineConfig`:  
-  Loads and parses the YAML configuration using `PipelineConfig` (imported from `.models`). Caches the result for subsequent calls.
+- `__init__(self, config_path: str = "config.yaml")`
+  - Initializes the manager, sets the config file path, and loads `.env` vars.
+- `load_config(self) -> PipelineConfig`
+  - Loads and parses the main configuration file into a `PipelineConfig` dataclass (from `.models`).
+  - Caches the result for subsequent calls.
+- `get_api_key(self, provider: str) -> str`
+  - Retrieves the correct API key from environment variables based on the provider (`openai`, `anthropic`, or `azure_openai`).
+  - Raises an error if the provider or key is missing.
+- `get_model_config(self) -> Dict[str, Any]`
+  - Returns a dict suitable for model instantiation or API calls, including embedded API keys and, if needed, Azure-specific values.
 
-- `get_api_key(self, provider: str) -> str`:  
-  Retrieves the relevant API key for the given provider from environment variables. Provider must be one of `"openai"`, `"anthropic"`, or `"azure_openai"`.
+### Variables
 
-- `get_model_config(self) -> Dict[str, Any]`:  
-  Returns an augmented model configuration dictionary by merging base YAML config with the correct API key and, in the case of Azure OpenAI, additional settings (endpoint, deployment name, API version) from environment.
+- `config_path`: Path to the YAML configuration file (default: `config.yaml`).
+- `_config`: Cached loaded config object.
 
-### External Dependencies
+### External References
 
-- **os**: To access environment variables.
-- **yaml**: For parsing the YAML configuration file.
-- **pathlib.Path**: For robust path manipulation.
-- **dotenv.load_dotenv**: To load environment variables from a `.env` file.
-- **.models.PipelineConfig**: Data model for the YAML configuration structure (assumed to be a Pydantic or similar data class).
-
-### Configuration Files
-
-- `.env`: Loaded automatically for environment variable management.
-- `config.yaml`: Main configuration file for pipeline settings.
-
----
+- `PipelineConfig` (imported from `.models`): Expected to be a dataclass or object modeling your pipeline configuration.
 
 ## Dependencies
 
-### This file depends on:
+### External Packages
 
-- `os` (standard library)
-- `yaml` (PyYAML)
-- `pathlib.Path` (standard library)
-- `dotenv.load_dotenv` (`python-dotenv` package)
-- Local import: `.models.PipelineConfig` data model (must be defined elsewhere in your project).
+- [`os`](https://docs.python.org/3/library/os.html): For accessing environment variables.
+- [`yaml`](https://pyyaml.org/): For loading YAML configuration files.
+- [`dotenv`](https://pypi.org/project/python-dotenv/): For loading environment variables from a `.env` file.
+- [`pathlib`](https://docs.python.org/3/library/pathlib.html): For robust filesystem path handling.
+- `PipelineConfig` from your local `.models` module.
 
-### Code that depends on this file:
+### Internal
 
-- Any code that requires structured, secure access to model configuration, API keys, or other project-level settings should utilize the `ConfigManager` class.
+- This file depends on a `PipelineConfig` class (from `.models`) that matches the expected config schema (must accept dict-unpacking).
+- Typical usage assumes a `config.yaml` exists and that relevant API keys are present in a `.env` file.
 
----
+### Downstream
+
+- Any component that needs access to unified configuration (e.g., model initialization, service clients, etc.) should instantiate and use the `ConfigManager`.
 
 ## Usage Examples
 
-### Load and Access Full Config
+### Example 1: Basic Configuration Loading
 
 ```python
 from src.config import ConfigManager
 
-# Initialize (loads .env automatically)
-cfg_mgr = ConfigManager('config.yaml')
-
-# Load parsed PipelineConfig model from YAML
-cfg = cfg_mgr.load_config()
-
-# Access specific config sections
-print(cfg.model)
+config_mgr = ConfigManager()
+pipeline_config = config_mgr.load_config()
+print(pipeline_config.some_setting)
 ```
 
-### Get API Key for Provider
+### Example 2: Get Model Configuration with API Key
 
 ```python
-api_key = cfg_mgr.get_api_key("openai")
-print(api_key)
+from src.config import ConfigManager
+
+config_mgr = ConfigManager()
+model_config = config_mgr.get_model_config()
+print(model_config)
+# Output includes: provider, api_key, and (if Azure) azure-specific keys
 ```
 
-### Get Model Configuration (includes merged-in API key and Azure info)
+### Example 3: Fetch Specific API Key
 
 ```python
-model_cfg = cfg_mgr.get_model_config()
-print(model_cfg)
+from src.config import ConfigManager
+
+config_mgr = ConfigManager()
+openai_key = config_mgr.get_api_key("openai")
+print("OpenAI key:", openai_key)
 ```
 
-### Expected Environment
+## Notes
 
-You should define the necessary variables in your `.env` file:
-
-```env
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-AZURE_OPENAI_API_KEY=...
-AZURE_OPENAI_ENDPOINT=https://<your-azure-openai-endpoint>
-AZURE_OPENAI_DEPLOYMENT_NAME=my-deployment
-AZURE_OPENAI_API_VERSION=2023-12-01-preview
-```
+- You **must** provide a `.env` file with the necessary API keys (e.g., `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
+- The required YAML config structure must match what `PipelineConfig` expects.
+- Azure-specific fields are only added if `provider` is set to `'azure_openai'` in your config.
 
 ---
 
-## Notes & Best Practices
-
-- **Sensitive keys/credentials should never be committed to version control.** Keep `.env` in your `.gitignore`.
-- Extendable for future providers by modifying `key_mapping` and the Azure-specific logic as needed.
-- The `PipelineConfig` class structure should align with the format and fields expected in `config.yaml`.
-- This file should be considered the single source of truth for all runtime configuration and credential needs.
-
----
-
-## Related Files
-
-- `src/models.py`: Must provide the `PipelineConfig` class.
-- `.env`: For secret management.
-- `config.yaml`: Project configuration settings.
+**Recommendation:** Place this file at the root of your `src` package and ensure that all services or scripts consistently use this configuration manager. This makes configuration changes, credential rotation, and environment switching much easier to manage.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: b4886e508ee52a8b9582d55ece0dac4825215397b92b4735587e1a36e2e2edd2
-relative_path: src/config.py
-generation_date: 2025-06-30T00:04:43.290726
+relative_path: src\config.py
+generation_date: 2025-06-30T14:14:21.042391
 ```
 <!-- END GENERATION METADATA -->

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(source:*)",
+      "Bash(curl:*)",
+      "Bash(grep:*)",
+      "Bash(pkill:*)",
+      "Bash(claude mcp:*)",
+      "Bash(true)",
+      "Bash(kill:*)",
+      "Bash(timeout:*)",
+      "mcp__therapy-link-docs__get_relevant_files",
+      "mcp__therapy-link-docs__understand_feature",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(rg:*)"
+    ],
+    "deny": []
+  }
+}

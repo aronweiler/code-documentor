@@ -56,6 +56,7 @@ file_processing:
     - "package-lock.json"
     - "alembic"
     - "guide_metadata.json"
+    - "coverage"
 
 # Output Configuration
 output:
