@@ -82,6 +82,9 @@ def add_generate_arguments(parser):
         "--guide", "-g", action="store_true", help="Generate documentation guide"
     )
     parser.add_argument(
+        "--force-full-guide", action="store_true", help="Force full guide regeneration (disable incremental updates)"
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
 
@@ -135,6 +138,7 @@ def run_documentation_generation(args):
             file_docs=args.file_docs,
             design_docs=args.design_docs,
             guide=args.guide,
+            force_full_guide=getattr(args, 'force_full_guide', False),
         )
 
         # Print summary
