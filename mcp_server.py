@@ -28,132 +28,19 @@ class DocumentationMCPServer:
         self.repo_path = Path(repo_path) if repo_path else Path.cwd()
         self.server = Server("documentation-mcp-server")
         
+        # Debug logging to file
+        debug_log_path = Path("/tmp/mcp_debug.log")
+        with open(debug_log_path, "a") as f:
+            f.write(f"DEBUG: MCP Server initialized with repo_path: {self.repo_path}\n")
+            doc_guide_path = self.repo_path / "documentation_output" / "documentation_guide.md"
+            f.write(f"DEBUG: Looking for documentation guide at: {doc_guide_path}\n")
+            f.write(f"DEBUG: Documentation guide exists: {doc_guide_path.exists()}\n")
+            f.write(f"DEBUG: Current working directory: {Path.cwd()}\n")
+            f.write("---\n")
+        
         # Initialize MCP manager
         self.mcp_manager = MCPManager()
-        
-        # Register tools
-        self._register_tools()
     
-    
-    def _register_tools(self):
-        """Register MCP tools."""
-        
-        @self.server.call_tool()
-        async def get_relevant_files(arguments: dict) -> List[types.TextContent]:
-            """
-            Find relevant files based on a natural language description.
-            
-            Args:
-                arguments (dict): Dictionary containing description
-                
-            Returns:
-                List of relevant file paths relative to repository root
-            """
-            description = arguments.get("description", "")
-            
-            if not description:
-                return [types.TextContent(
-                    type="text",
-                    text="Error: Description parameter is required"
-                )]
-            
-            try:
-                # Use MCPManager to find relevant files
-                result = await self.mcp_manager.find_relevant_files(
-                    description=description,
-                    repo_path=self.repo_path,
-                    max_results=10
-                )
-                
-                # Convert to JSON response
-                response_data = {
-                    "query_description": result.query_description,
-                    "relevant_files": [
-                        {
-                            "file_path": file.file_path,
-                            "summary": file.summary,
-                            "relevance_score": file.relevance_score,
-                            "reasoning": file.reasoning
-                        }
-                        for file in result.relevant_files
-                    ],
-                    "total_files_analyzed": result.total_files_analyzed,
-                    "processing_time_seconds": result.processing_time_seconds
-                }
-                
-                return [types.TextContent(
-                    type="text", 
-                    text=json.dumps(response_data, indent=2)
-                )]
-                
-            except Exception as e:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error processing request: {str(e)}"
-                )]
-        
-        @self.server.call_tool()
-        async def understand_feature(*args, **kwargs) -> List[types.TextContent]:
-            """
-            Get documentation and understanding of a specific feature.
-            
-            Args:
-                arguments (dict): Dictionary containing feature_description
-                
-            Returns:
-                Related documentation content about the feature
-            """
-            # Debug: log what we receive
-            print(f"DEBUG: args={args}, kwargs={kwargs}")
-            
-            # Try to extract feature_description from different possible formats
-            feature_description = ""
-            if args and isinstance(args[0], dict):
-                feature_description = args[0].get("feature_description", "")
-                print(f"DEBUG: Extracted from dict: {feature_description}")
-            elif args and isinstance(args[0], str):
-                feature_description = args[0]
-                print(f"DEBUG: Using string directly: {feature_description}")
-            elif "feature_description" in kwargs:
-                feature_description = kwargs["feature_description"]
-                print(f"DEBUG: Extracted from kwargs: {feature_description}")
-            
-            print(f"DEBUG: Final feature_description: {feature_description}")
-            
-            if not feature_description:
-                return [types.TextContent(
-                    type="text",
-                    text="Error: feature_description parameter is required"
-                )]
-            
-            try:
-                # Use MCPManager to understand the feature
-                result = await self.mcp_manager.understand_feature(
-                    feature_description=feature_description,
-                    repo_path=self.repo_path
-                )
-                
-                # Convert to JSON response
-                response_data = {
-                    "feature_description": result.feature_description,
-                    "comprehensive_answer": result.comprehensive_answer,
-                    "key_components": result.key_components,
-                    "implementation_details": result.implementation_details,
-                    "usage_examples": result.usage_examples,
-                    "related_concepts": result.related_concepts,
-                    "source_documentation_files": result.source_documentation_files
-                }
-                
-                return [types.TextContent(
-                    type="text",
-                    text=json.dumps(response_data, indent=2)
-                )]
-                
-            except Exception as e:
-                return [types.TextContent(
-                    type="text",
-                    text=f"Error processing feature understanding request: {str(e)}"
-                )]
     
     def get_server(self) -> Server:
         """Get the configured MCP server instance."""
@@ -162,16 +49,29 @@ class DocumentationMCPServer:
 
 async def main():
     """Main entry point for the MCP server."""
-    # Get repository path from command line argument or environment variable
-    repo_path = None
-    if len(sys.argv) > 1:
-        repo_path = sys.argv[1]
-    else:
-        repo_path = os.getenv("DOCUMENTATION_REPO_PATH", os.getcwd())
-    
-    # Initialize the documentation MCP server
-    doc_server = DocumentationMCPServer(repo_path)
-    server = doc_server.get_server()
+    debug_log_path = Path("/tmp/mcp_debug.log")
+    try:
+        # Get repository path from command line argument or environment variable
+        repo_path = None
+        if len(sys.argv) > 1:
+            repo_path = sys.argv[1]
+        else:
+            repo_path = os.getenv("DOCUMENTATION_REPO_PATH", os.getcwd())
+        
+        with open(debug_log_path, "a") as f:
+            f.write(f"MCP Server main(): Starting with repo_path: {repo_path}\n")
+            f.write(f"MCP Server main(): sys.argv: {sys.argv}\n")
+        
+        # Initialize the documentation MCP server
+        doc_server = DocumentationMCPServer(repo_path)
+        server = doc_server.get_server()
+        
+        with open(debug_log_path, "a") as f:
+            f.write(f"MCP Server main(): Server initialized successfully\n")
+    except Exception as e:
+        with open(debug_log_path, "a") as f:
+            f.write(f"MCP Server main(): ERROR during initialization: {str(e)}\n")
+        raise
     
     # Define available tools
     @server.list_tools()
@@ -207,6 +107,111 @@ async def main():
                 }
             )
         ]
+    
+    # Register single tool handler that routes based on name
+    @server.call_tool()
+    async def handle_tool_call(name: str, arguments: dict) -> List[types.TextContent]:
+        """Handle all tool calls and route based on name."""
+        debug_log_path = Path("/tmp/mcp_debug.log")
+        with open(debug_log_path, "a") as f:
+            f.write(f"MCP Server: Tool called with name={name}, arguments={arguments}\n")
+        
+        if name == "get_relevant_files":
+            description = arguments.get("description", "")
+            
+            if not description:
+                return [types.TextContent(
+                    type="text",
+                    text="Error: Description parameter is required"
+                )]
+            
+            try:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCP Server: Processing get_relevant_files with description: {description}\n")
+                
+                # Use MCPManager to find relevant files
+                result = await doc_server.mcp_manager.find_relevant_files(
+                    description=description,
+                    repo_path=doc_server.repo_path,
+                    max_results=10
+                )
+                
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCP Server: MCPManager returned result: {result}\n")
+                
+                # Convert to JSON response
+                response_data = {
+                    "query_description": result.query_description,
+                    "relevant_files": [
+                        {
+                            "file_path": file.file_path,
+                            "summary": file.summary,
+                            "relevance_score": file.relevance_score,
+                            "reasoning": file.reasoning
+                        }
+                        for file in result.relevant_files
+                    ],
+                    "total_files_analyzed": result.total_files_analyzed,
+                    "processing_time_seconds": result.processing_time_seconds
+                }
+                
+                return [types.TextContent(
+                    type="text", 
+                    text=json.dumps(response_data, indent=2)
+                )]
+                
+            except Exception as e:
+                return [types.TextContent(
+                    type="text",
+                    text=f"Error processing get_relevant_files request: {str(e)}"
+                )]
+        
+        elif name == "understand_feature":
+            feature_description = arguments.get("feature_description", "")
+            
+            if not feature_description:
+                return [types.TextContent(
+                    type="text",
+                    text="Error: feature_description parameter is required"
+                )]
+            
+            try:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCP Server: Processing understand_feature with description: {feature_description}\n")
+                
+                # Use MCPManager to understand the feature
+                result = await doc_server.mcp_manager.understand_feature(
+                    feature_description=feature_description,
+                    repo_path=doc_server.repo_path
+                )
+                
+                # Convert to JSON response
+                response_data = {
+                    "feature_description": result.feature_description,
+                    "comprehensive_answer": result.comprehensive_answer,
+                    "key_components": result.key_components,
+                    "implementation_details": result.implementation_details,
+                    "usage_examples": result.usage_examples,
+                    "related_concepts": result.related_concepts,
+                    "source_documentation_files": result.source_documentation_files
+                }
+                
+                return [types.TextContent(
+                    type="text",
+                    text=json.dumps(response_data, indent=2)
+                )]
+                
+            except Exception as e:
+                return [types.TextContent(
+                    type="text",
+                    text=f"Error processing understand_feature request: {str(e)}"
+                )]
+        
+        else:
+            return [types.TextContent(
+                type="text",
+                text=f"Unknown tool: {name}"
+            )]
     
     # Run the server
     async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):

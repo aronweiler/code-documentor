@@ -94,9 +94,20 @@ class MCPManager:
         try:
             documentation_guide_path = state.repo_path / "documentation_output" / "documentation_guide.md"
             
+            # Debug logging
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Looking for doc guide at: {documentation_guide_path}\n")
+                f.write(f"MCPManager: File exists: {documentation_guide_path.exists()}\n")
+                f.write(f"MCPManager: State repo_path: {state.repo_path}\n")
+                f.write(f"MCPManager: State repo_path type: {type(state.repo_path)}\n")
+            
             if documentation_guide_path.exists():
                 with open(documentation_guide_path, 'r', encoding='utf-8') as f:
                     content = f.read()
+                
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Successfully loaded {len(content)} characters\n")
                 
                 self.logger.info(f"Loaded documentation guide: {len(content)} characters")
                 return {
@@ -104,6 +115,9 @@ class MCPManager:
                     "documentation_loaded": True
                 }
             else:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Documentation guide NOT FOUND\n")
+                
                 self.logger.warning(f"Documentation guide not found at {documentation_guide_path}")
                 return {
                     "documentation_guide_content": "",
@@ -113,6 +127,9 @@ class MCPManager:
                 }
                 
         except Exception as e:
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Exception in load_documentation_node: {str(e)}\n")
+            
             self.logger.error(f"Error loading documentation: {e}")
             return {
                 "documentation_loaded": False,
@@ -123,11 +140,30 @@ class MCPManager:
     def analyze_file_relevance_node(self, state: MCPState) -> Dict[str, Any]:
         """Use LLM to analyze file relevance."""
         try:
+            # Debug logging
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: analyze_file_relevance_node called\n")
+                f.write(f"MCPManager: documentation_loaded = {state.documentation_loaded}\n")
+                if hasattr(state, 'documentation_guide_content'):
+                    f.write(f"MCPManager: doc content length = {len(state.documentation_guide_content)}\n")
+                else:
+                    f.write(f"MCPManager: No documentation_guide_content attribute\n")
+                f.write(f"MCPManager: user_query = {state.user_query}\n")
+            
             if not state.documentation_loaded:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: ERROR - Documentation not loaded\n")
                 return {
                     "error_occurred": True,
                     "error_message": "Documentation not loaded, cannot analyze relevance"
                 }
+            
+            # Debug: Check LLM initialization
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: LLM object: {self.llm}\n")
+                f.write(f"MCPManager: LLM type: {type(self.llm)}\n")
             
             # Prepare the prompt
             system_message = SystemMessage(content=MCP_FILE_RELEVANCE_SYSTEM_PROMPT)
@@ -141,22 +177,61 @@ Please analyze the documentation and identify the most relevant SOURCE CODE file
             
             human_message = HumanMessage(content=user_content)
             
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: About to call LLM with {len(user_content)} characters\n")
+                f.write(f"MCPManager: System prompt length: {len(MCP_FILE_RELEVANCE_SYSTEM_PROMPT)}\n")
+            
             # Get LLM response
-            response = self.llm.invoke([system_message, human_message])
-            response_content = response.content
+            try:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Calling self.llm.invoke()...\n")
+                
+                response = self.llm.invoke([system_message, human_message])
+                
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: LLM invoke completed\n")
+                    f.write(f"MCPManager: Response type: {type(response)}\n")
+                    f.write(f"MCPManager: Response: {response}\n")
+                
+                response_content = response.content
+                
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Response content type: {type(response_content)}\n")
+                    f.write(f"MCPManager: Response content length: {len(response_content) if response_content else 'None'}\n")
+                
+            except Exception as llm_error:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: LLM invoke FAILED: {str(llm_error)}\n")
+                    f.write(f"MCPManager: LLM error type: {type(llm_error)}\n")
+                raise llm_error
             
             self.logger.info(f"LLM analysis complete: {len(response_content)} characters")
             
             # Parse JSON response
             try:
+                # Debug logging - log the raw LLM response
+                debug_log_path = Path("/tmp/mcp_debug.log")
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Raw LLM response: {response_content}\n")
+                
                 result_data = json.loads(response_content)
+                
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Parsed LLM response: {result_data}\n")
+                
                 return {
                     "llm_analysis_complete": True,
-                    "_raw_llm_response": result_data
+                    "raw_llm_response": result_data  # Remove underscore prefix
                 }
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse LLM JSON response: {e}")
                 self.logger.error(f"Raw response: {response_content}")
+                
+                debug_log_path = Path("/tmp/mcp_debug.log")
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: JSON parse error: {str(e)}\n")
+                    f.write(f"MCPManager: Raw response: {response_content}\n")
+                
                 return {
                     "error_occurred": True,
                     "error_message": f"Failed to parse LLM response as JSON: {str(e)}"
@@ -172,10 +247,26 @@ Please analyze the documentation and identify the most relevant SOURCE CODE file
     def format_relevant_files_results_node(self, state: MCPState) -> Dict[str, Any]:
         """Format the results into the final response model."""
         try:
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: format_relevant_files_results_node called\n")
+                f.write(f"MCPManager: state.error_occurred = {state.error_occurred}\n")
+                f.write(f"MCPManager: hasattr raw_llm_response = {hasattr(state, 'raw_llm_response')}\n")
+                f.write(f"MCPManager: state attributes = {dir(state)}\n")
+            
             if state.error_occurred:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: Returning early due to error\n")
                 return {}  # Error already set, no need to modify state
             
-            raw_response = getattr(state, '_raw_llm_response', {})
+            raw_response = getattr(state, 'raw_llm_response', {})
+            
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: raw_response = {raw_response}\n")
+                f.write(f"MCPManager: raw_response type = {type(raw_response)}\n")
+                f.write(f"MCPManager: relevant_files in raw_response = {'relevant_files' in raw_response}\n")
+                if 'relevant_files' in raw_response:
+                    f.write(f"MCPManager: len(relevant_files) = {len(raw_response['relevant_files'])}\n")
             
             # Convert to our response model
             file_results = []
@@ -187,6 +278,9 @@ Please analyze the documentation and identify the most relevant SOURCE CODE file
                     reasoning=file_data.get('reasoning', '')
                 )
                 file_results.append(file_result)
+                
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Created {len(file_results)} file_results\n")
             
             # Limit results to max_results
             if len(file_results) > state.max_results:
@@ -390,7 +484,7 @@ Please synthesize this information to provide a comprehensive understanding of t
                 
                 return {
                     "llm_analysis_complete": True,
-                    "_raw_synthesis_response": result_data
+                    "raw_synthesis_response": result_data
                 }
             except json.JSONDecodeError as e:
                 self.logger.error(f"Failed to parse synthesis JSON response: {e}")
@@ -414,7 +508,7 @@ Please synthesize this information to provide a comprehensive understanding of t
             if state.error_occurred:
                 return {}  # Error already set
             
-            raw_response = getattr(state, '_raw_synthesis_response', {})
+            raw_response = getattr(state, 'raw_synthesis_response', {})
             
             response = MCPFeatureResponse(
                 feature_description=raw_response.get('feature_description', state.user_query),
@@ -450,12 +544,51 @@ Please synthesize this information to provide a comprehensive understanding of t
         )
         
         # Create and run workflow
-        workflow = self.create_relevant_files_workflow()
+        debug_log_path = Path("/tmp/mcp_debug.log")
+        try:
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Creating workflow...\n")
+            workflow = self.create_relevant_files_workflow()
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Workflow created successfully\n")
+        except Exception as e:
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: ERROR creating workflow: {str(e)}\n")
+            return MCPRelevantFilesResponse(
+                query_description=description,
+                relevant_files=[],
+                total_files_analyzed=0
+            )
         
         try:
+            # Debug logging
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Starting workflow with initial_state: {initial_state.dict()}\n")
+            
             final_state = workflow.invoke(initial_state)
             
-            if final_state.error_occurred:
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: Workflow completed with final_state type: {type(final_state)}\n")
+                if hasattr(final_state, 'dict'):
+                    f.write(f"MCPManager: Final state dict: {final_state.dict()}\n")
+                else:
+                    f.write(f"MCPManager: Final state: {final_state}\n")
+            
+            # Handle both dict and MCPState final_state
+            if isinstance(final_state, dict):
+                error_occurred = final_state.get('error_occurred', False)
+                relevant_files_result = final_state.get('relevant_files_result')
+            else:
+                error_occurred = final_state.error_occurred
+                relevant_files_result = final_state.relevant_files_result
+            
+            with open(debug_log_path, "a") as f:
+                f.write(f"MCPManager: error_occurred = {error_occurred}\n")
+                f.write(f"MCPManager: relevant_files_result = {relevant_files_result}\n")
+                f.write(f"MCPManager: relevant_files_result type = {type(relevant_files_result)}\n")
+            
+            if error_occurred:
                 # Return error response
                 return MCPRelevantFilesResponse(
                     query_description=description,
@@ -463,7 +596,16 @@ Please synthesize this information to provide a comprehensive understanding of t
                     total_files_analyzed=0
                 )
             
-            result = final_state.relevant_files_result
+            if relevant_files_result is None:
+                with open(debug_log_path, "a") as f:
+                    f.write(f"MCPManager: ERROR - relevant_files_result is None\n")
+                return MCPRelevantFilesResponse(
+                    query_description=description,
+                    relevant_files=[],
+                    total_files_analyzed=0
+                )
+            
+            result = relevant_files_result
             result.processing_time_seconds = time.time() - start_time
             
             return result

@@ -38,13 +38,13 @@ RELEVANCE SCORING:
 - Below 0.4: Not relevant (exclude from results)
 
 EXAMPLES OF GOOD vs BAD FILE PATHS:
-GOOD (SOURCE CODE):
+GOOD (SOURCE CODE listed in the guide):
 - src/user_auth.py
 - lib/workflow_engine.js
 - controllers/api_controller.rb
 - utils/database_helper.cpp
 
-BAD (DOCUMENTATION):
+BAD (DOCUMENTATION listed in the guide):
 - documentation_output/src/user_auth_documentation.md
 - docs/api_guide.md
 - README.md

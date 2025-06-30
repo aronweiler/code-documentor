@@ -185,12 +185,18 @@ class GuideGenerator:
         guide_entries = []
         output_path = state.request.output_path
 
-        # Process each successful documentation result
-        successful_results = [
-            r
-            for r in state.results
-            if r.success and r.documentation != "[SKIPPED - No changes detected]"
-        ]
+        # If force_full_guide is enabled, load all existing documentation files
+        # instead of only processing results from this run
+        if state.request.force_full_guide:
+            print("Force full guide enabled - loading all existing docs...")
+            successful_results = self.load_existing_documentation_results(state)
+        else:
+            # Process each successful documentation result from this run
+            successful_results = [
+                r
+                for r in state.results
+                if r.success and r.documentation != "[SKIPPED - No changes detected]"
+            ]
 
         for result in successful_results:
             # Calculate paths
@@ -258,6 +264,11 @@ class GuideGenerator:
             total_files=len(guide_entries),
             generation_date=datetime.now().isoformat(),
         )
+
+        # Update metadata for all generated entries
+        metadata_manager = self._get_metadata_manager(state.request.output_path)
+        generated_entries = {entry.original_file_path: entry.summary for entry in guide_entries}
+        metadata_manager.update_metadata_after_generation(state, generated_entries)
 
         print(f"Generated documentation guide with {len(guide_entries)} entries")
         return guide

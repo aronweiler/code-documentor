@@ -8,201 +8,190 @@
 
 ## Purpose
 
-This file implements an **MCP (Machine/Model Control Protocol) server** tailored for repository documentation tasks. Its primary function is to provide interactive, programmatic tools for accessing and utilizing documentation that has been generated for a code repository. It allows users (or bots/agents) to query for relevant source files based on descriptions and understand specific features through programmatic interfaces.
+This file implements the **Documentation MCP Server**, an MCP (Machine Communication Protocol) server designed to provide intelligent interaction with repository documentation. It enables advanced tooling for searching, retrieving, and understanding codebase documentation—primarily for use in documentation assistants, developer tools, or code analysis pipelines.
 
-Typical use cases include:
-- Integrating with AI agents that need guidance on a codebase.
-- Interactive tools for developers to find documentation/relevant files faster.
-- Automated systems that require contextual documentation for reasoning about codebases.
+The primary goals are:
+
+- **Enabling tools** to query for relevant files based on natural language descriptions.
+- **Supporting feature comprehension** by producing documentation summaries for specific features.
+- **Integrating with MCP-compliant clients** via a standardized stdio server.
 
 ---
 
 ## Functionality
 
-The core logic centers around:
-- Initializing the server and loading any top-level documentation guides.
-- Exposing programmatic "tools" (API-like endpoints) such as:
-    - `get_relevant_files`: Find relevant files given a plain-text description.
-    - `understand_feature`: Fetch and summarize documentation about a specific feature.
-- Serving and listing these tools for client use.
-- (Future Scope) Placeholder implementations that can be augmented with advanced document and code search/synthesis, e.g., via LLMs or semantic search.
+The server provides two main tools (endpoints) usable by client interfaces:
 
-### Main Classes and Functions
+1. **get_relevant_files**:  
+   Finds files within the repository that are most relevant to a provided natural language description (e.g., "files related to database migrations").
 
-#### `DocumentationMCPServer`
+2. **understand_feature**:  
+   Provides a structured, comprehensive summary and understanding of a feature, including key components, implementation details, usage examples, and documentation sources, based on a feature description.
 
-- **Purpose**: Encapsulates the server setup, documentation loading, and tool registration.
-- **Init Parameters**:
-    - `repo_path`: The path to the repository root (default: current working directory).
-- **Key Methods**:
-    - `_load_documentation_guide()`: Loads `documentation_guide.md` from the generated documentation output, if present.
-    - `_register_tools()`: Registers main tools for file finding and feature understanding.
-    - `_find_relevant_files(description)`: (Placeholder) Returns mock list of file paths matching some description.
-    - `_understand_feature(feature_description)`: (Placeholder) Extracts (crudely, for now) documentation for a described feature.
-    - `get_server()`: Returns the internal MCP Server instance.
+The server is started typically as a command-line script. It logs debug information to `/tmp/mcp_debug.log`.
 
-#### `main()`
+### Main Steps:
 
-- **Purpose**: Entrypoint for the module/script.
-- **Responsibilities**:
-    - Resolves the repository path.
-    - Instantiates `DocumentationMCPServer`.
-    - Registers the tools and tool schemas.
-    - Launches the server on standard IO streams, ready to accept MCP-formatted requests.
-
-#### Tool Functions
-
-- **`get_relevant_files`:**
-    - Input: `{ "description": "<user query>" }`
-    - Output: JSON list of (mock) relevant file paths. Intended to be implemented with semantic or LLM-based search in future.
-
-- **`understand_feature`:**
-    - Input: `{ "feature_description": "<feature/detail>" }`
-    - Output: Extracted documentation text from the documentation guide, or fallback if nothing matches.
-
-#### Additional Utilities
-
-- Uses `pydantic` for URL/type validation; and the `mcp.types` and `mcp.server` for MCP protocol compliance.
-- Outputs logs/warnings/errors to `stderr` for traceability.
+- Parses configuration (repo path) from arguments or environment.
+- Initializes the MCP server and tools.
+- Handles incoming tool requests, routes them to the MCPManager business logic, and formats responses as structured JSON for downstream clients.
+- Runs as a stdio-based async server for MCP.
 
 ---
 
 ## Key Components
 
-- **Classes**:
-    - `DocumentationMCPServer`: Central class for server and tool registration.
+### 1. Classes
 
-- **Functions / Aliased Endpoints**:
-    - `get_relevant_files`
-    - `understand_feature`
-    - `handle_list_tools`
+#### `DocumentationMCPServer`
+- **Purpose**: Sets up the server, links it to a repository, and manages access to `MCPManager`, which contains the core analysis and documentation retrieval logic.
+- **Members**:
+  - `repo_path` (`Path`): Path to the root of the documentation repository.
+  - `server` (`mcp.server.Server`): The MCP stdio server instance.
+  - `mcp_manager` (`MCPManager`): Logic handler for search/documentation features.
 
-- **Variables**:
-    - `self.documentation_guide_content`: Stores loaded documentation.
-    - `self.server`: Holds the MCP server instance.
+#### `MCPManager` *(from `src.mcp_manager`)*  
+Handles actual business logic for:
+- Finding relevant files (`find_relevant_files`)
+- Understanding specific features (`understand_feature`)
+*(Interface only referenced in this file; details assumed in `src/mcp_manager.py`)*
 
-- **Tools/Endpoints Defined for Clients:**
-    - `list_tools`: Lets clients discover available API/tool endpoints, with input schemas.
+### 2. Functions
+
+#### `main()`
+- Bootstraps the server, sets up the repository path, registers tools, and starts the stdio server.
+
+#### Tool Handlers
+- `handle_list_tools`: Returns metadata about the available tools/endpoints.
+- `handle_tool_call`: Central tool dispatcher which:
+  - For `get_relevant_files`: delegates to `MCPManager.find_relevant_files(...)`
+  - For `understand_feature`: delegates to `MCPManager.understand_feature(...)`
+  - For other names: returns an error response.
+
+### 3. Tool Schemas
+
+#### `get_relevant_files`
+- **Input Schema**: Requires a `description` (str) field, containing natural language query.
+
+#### `understand_feature`
+- **Input Schema**: Requires a `feature_description` (str) field describing the feature of interest.
+
+### 4. Logging
+- Writes extensive debug/log output to `/tmp/mcp_debug.log`.
 
 ---
 
 ## Dependencies
 
-### External Packages
+- **Standard libraries**:
+  - `asyncio`, `json`, `os`, `sys`, `pathlib`, `typing`
+- **Third-party libraries** (or project modules):
+  - `mcp.server.stdio`, `mcp.types`, `mcp.server`, `mcp.server.models`
+  - `pydantic.AnyUrl`
+  - **Local project**: `src.mcp_manager.MCPManager`
 
-- [`asyncio`](https://docs.python.org/3/library/asyncio.html) (built-in): For async execution.
-- [`json`](https://docs.python.org/3/library/json.html) (built-in): Serialization.
-- [`os`](https://docs.python.org/3/library/os.html), [`sys`](https://docs.python.org/3/library/sys.html): Filesystem and process management.
-- [`pathlib`](https://docs.python.org/3/library/pathlib.html): Path manipulation.
-- [`pydantic`](https://docs.pydantic.dev/): For URL parsing/validation (minimal use in this file).
-- `mcp.server` and `mcp.types` (local/external dependency): Core MCP protocol implementation.
-    - MCP server tools: `Server`, `NotificationOptions`, `InitializationOptions`
-    - Type models: `Tool`, `TextContent`
+### What depends on this file?
 
-### What Depends on This
-
-- Any tool or process that wants to interact with the repository's documentation using MCP protocol would connect to and use this server.
-- It expects that the repository contains (or is configured to generate) a `documentation_output/documentation_guide.md`.
+- Any process that launches the documentation MCP server (e.g., a code documentation assistant, dev environment, or integration test).
 
 ---
 
 ## Usage Examples
 
-### Run as a Standalone Server
+### Running the server
 
 ```bash
-python3 mcp_server.py /path/to/your/repo
+python mcp_server.py /path/to/your/repo
 ```
-
-Or via environment variable:
-
+or set via environment variable:
 ```bash
 export DOCUMENTATION_REPO_PATH=/path/to/your/repo
-python3 mcp_server.py
+python mcp_server.py
 ```
 
-### Querying the Server (Example Conceptual Calls)
+### As a MCP Client
 
-Assume you have a client that communicates with the MCP server over stdio.
+Send a tool invocation matching the registered schemas, for example:
 
-#### 1. List Tools
+#### 1. Find relevant files
 
 ```json
 {
-  "method": "list_tools",
-  "params": { }
-}
-```
-
-#### 2. Find Relevant Files
-
-```json
-{
-  "method": "get_relevant_files",
-  "params": {
-    "description": "files related to user authentication"
-  }
-}
-```
-_Server replies with a list of relevant file paths (mocked for now)_
-
-#### 3. Understand Feature
-
-```json
-{
-  "method": "understand_feature",
-  "params": {
-    "feature_description": "AI workflow calculating drive time"
+  "tool": "get_relevant_files",
+  "arguments": {
+    "description": "files handling OAuth login"
   }
 }
 ```
 
-### Code Example: Embedding as a Component
-
-```python
-from mcp_server import DocumentationMCPServer
-
-repo_path = "/path/to/repo"
-doc_server = DocumentationMCPServer(repo_path)
-server = doc_server.get_server()
-# Use 'server' as needed with MCP communication logic
+**Response Example:**
+```json
+{
+  "query_description": "files handling OAuth login",
+  "relevant_files": [
+    {
+      "file_path": "auth/oauth_backend.py",
+      "summary": "Handles OAuth callbacks.",
+      "relevance_score": 0.95,
+      "reasoning": "File imports OAuth client and manages login flows."
+    }
+    // ...
+  ],
+  "total_files_analyzed": 240,
+  "processing_time_seconds": 2.1
+}
 ```
 
----
+#### 2. Understand a feature
 
-## Notes
-
-- **Tool logic is primarily placeholder** pending future implementation of advanced file/feature matching (semantic or LLM-based).
-- The server expects a `documentation_guide.md` within a `documentation_output` directory at the repo root for best results.
-- All MCP protocol served tools include machine-readable JSON schemas for their required input.
-
----
-
-## File Structure
-
-```plaintext
-mcp_server.py
-├── DocumentationMCPServer [class]
-│   ├── _load_documentation_guide
-│   ├── _register_tools
-│   ├── _find_relevant_files
-│   ├── _understand_feature
-│   └── get_server
-├── main [async function]
-│   └── handle_list_tools [tool]
-│
-└── __main__ block
+```json
+{
+  "tool": "understand_feature",
+  "arguments": {
+    "feature_description": "user registration system"
+  }
+}
 ```
+
+**Response Example:**
+```json
+{
+  "feature_description": "user registration system",
+  "comprehensive_answer": "The user registration system handles ...",
+  "key_components": [
+    "auth/routes/signup.py", "auth/models/user.py"
+  ],
+  "implementation_details": "Implements email confirmation, stores user in database ...",
+  "usage_examples": [
+    "POST /api/register with payload { ... }"
+  ],
+  "related_concepts": [
+    "authentication", "email service"
+  ],
+  "source_documentation_files": [
+    "docs/authentication.md"
+  ]
+}
+```
+
+### Extending Functionality
+
+You may add new tools by:
+- Adding definitions to the `handle_list_tools` handler.
+- Extending dispatching in `handle_tool_call`.
+
 ---
 
-**End of Documentation**
+## Summary
+
+**mcp_server.py** is a flexible, stdio-based server for advanced documentation interaction and repository analysis. It provides a plug-and-play interface for developer tools requiring sophisticated codebase query and documentation understanding capabilities. Tooling is easily extensible, and all business logic routing is delegated to the pluggable `MCPManager` class.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: b23efe23684b5b305486a692c5c103a7744835eb6d979939256bff72f96535f2
+file_hash: a5b95495382459789c2ed10654d9d08a22dbf5dfc94ca306676c870880571244
 relative_path: mcp_server.py
-generation_date: 2025-06-29T16:51:00.774473
+generation_date: 2025-06-30T00:03:27.800471
 ```
 <!-- END GENERATION METADATA -->

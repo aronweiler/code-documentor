@@ -2,178 +2,151 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\guide_metadata_manager.py
+# Documentation for src/guide_metadata_manager.py
 
 # guide_metadata_manager.py
 
 ## Purpose
 
-The `guide_metadata_manager.py` file provides an API for managing and tracking metadata related to incremental guide (documentation) generation in a codebase. Its primary function is to ensure efficient, consistent, and correct updates to both per-file documentation and the overall documentation guide by detecting changes, updating tracking records, handling metadata persistence, and facilitating incremental rebuilds only as needed.
-
-This component supports:  
-- Faster generation of documentation by avoiding unnecessary rewrites  
-- Accurate detection of when source files or documentation files change  
-- Robustness against data corruption and deleted/moved files  
-- Automatic management of guide versioning and timestamping
-
----
+This file provides the `GuideMetadataManager` class, responsible for tracking and managing metadata associated with incremental documentation and guide generation for source code repositories. It enables efficient change detection (new, modified, or deleted files) and supports incremental rather than full documentation regeneration, optimizing the documentation workflow.
 
 ## Functionality
 
-The central class, `GuideMetadataManager`, encapsulates all logic for loading, saving, updating, and synchronizing guide-related metadata with the actual state of source code and generated documentation. This includes:
+The core responsibilities of the `GuideMetadataManager` include:
+- Maintaining up-to-date metadata about source files, generated documentation, and guide entries.
+- Detecting changes to inform incremental or full rebuilds of documentation or guides.
+- Providing serialization/deserialization logic for reading and writing metadata to disk.
+- Supporting functions for efficiently updating and synchronizing the metadata after documentation generation.
 
-- Loading existing metadata or initializing new metadata for fresh runs
-- Saving changes atomically to prevent state corruption
-- Detecting changes (new, modified, deleted files) since the last run
-- Updating metadata after a successful documentation generation
-- Determining if a full guide rebuild is required
-- Hashing content/files to check for actual changes
-- Discovering all documented files, even if metadata went missing
-
-All API methods are designed for integration with a larger documentation pipeline (as suggested by references to objects like `PipelineState` and `DocumentationResult`).
-
----
+This manager is designed to work inside an automated documentation pipeline, keeping track of which files need (re)generation to avoid unnecessary work.
 
 ## Key Components
 
-### Classes
+### 1. Classes
 
 #### `GuideMetadataManager`
-- **Constructor**
-  - `__init__(self, output_path: Path)`
-    - Initializes the manager, sets up metadata directory, and ensures its existence.
+The central class handling metadata lifecycle, including creation, update, change detection, and persistence.
 
-- **Metadata Persistence**
-  - `load_metadata(self) -> GuideMetadata`
-    - Loads metadata from disk or creates a new record if not available or corrupted.
-  - `save_metadata(self, metadata: GuideMetadata) -> None`
-    - Writes metadata to disk with atomic file replacement for data integrity.
+**Key Methods:**
+- `__init__(self, output_path: Path)`
+  - Sets up paths and logging, prepares storage directory.
+- `load_metadata(self) -> GuideMetadata`
+  - Loads guide metadata from disk, or initializes new metadata if not found.
+- `save_metadata(self, metadata: GuideMetadata) -> None`
+  - Serializes and saves the current metadata state to disk atomically.
+- `detect_changes(self, state: PipelineState, current_results: List[DocumentationResult]) -> ChangeSet`
+  - Compares current files and docs to metadata, returns a `ChangeSet` with new/modified/deleted files, and flags if a full rebuild is needed.
+- `_discover_all_documentation_files(self, state: PipelineState) -> List[str]`
+  - Scans for all documentation files and infers corresponding source files.
+- `update_file_metadata(self, relative_path, result, state, guide_entry_content) -> FileMetadata`
+  - Computes new `FileMetadata` for a given source file.
+- `update_metadata_after_generation(self, state, generated_entries)`
+  - Updates guide metadata after completion of documentation generation, also removing metadata for deleted files.
+- `update_file_metadata_for_existing_doc(self, relative_path, state, guide_entry_content) -> Optional[FileMetadata]`
+  - Updates `FileMetadata` for a documentation file that was not regenerated in the latest run.
+- `_calculate_file_hash(self, file_path: Path) -> str`
+  - Returns SHA-256 hash for the file contents.
+- `_calculate_string_hash(self, content: str) -> str`
+  - Returns SHA-256 hash of a string (used for guide entry content).
+- `should_force_full_rebuild(self, changeset: ChangeSet) -> bool`
+  - Determines if a full documentation rebuild should occur based on change counts or special conditions.
 
-- **Change Detection**
-  - `detect_changes(self, state: PipelineState, current_results: List[DocumentationResult]) -> ChangeSet`
-    - Analyzes current source/doc state against stored metadata and returns a `ChangeSet` summarizing new, modified, and deleted files.
+### 2. Data Classes and Structures
 
-- **Discovering Documentation**
-  - `_discover_all_documentation_files(self, state: PipelineState) -> List[str]`
-    - Scans output directory, deduces which source files have documentation even if metadata is inconsistent.
+These are imported from `.models`:
+- `FileMetadata`: Stores metadata for each single tracked file.
+- `GuideMetadata`: Aggregates state across all tracked files, and global info (version, structure hash, etc.).
+- `ChangeSet`: Encapsulates lists of new, modified, deleted files and flags if a full rebuild is needed.
+- `PipelineState`: Contains state for the current documentation pipeline execution.
+- `DocumentationResult`: Describes the result of attempting to generate documentation for a file.
 
-- **Metadata Update**
-  - `update_file_metadata(...) -> FileMetadata`
-    - Populates a `FileMetadata` instance for a newly generated or updated doc/result.
-  - `update_metadata_after_generation(...) -> None`
-    - Applies changes to the persisted metadata after guide (re-)generation finishes.
-  - `update_file_metadata_for_existing_doc(...) -> Optional[FileMetadata]`
-    - Regenerates metadata for doc files not touched in the current run, using file properties and provided content.
+### 3. Notable Variables
 
-- **Hashing Helpers**
-  - `_calculate_file_hash(self, file_path: Path) -> str`
-    - SHA-256 hash for files, for fast change detection.
-  - `_calculate_string_hash(self, content: str) -> str`
-    - SHA-256 hashes of in-memory guide entries.
-
-- **Rebuild Policy**
-  - `should_force_full_rebuild(self, changeset: ChangeSet) -> bool`
-    - Decides if a full rebuild is warranted (either by flag or by high ratio of changes).
-
-### Data Structures (from `.models`)
-
-- `FileMetadata`: Tracks metadata for an individual file (source and doc).
-- `GuideMetadata`: Global guide state including all tracked file metadata.
-- `ChangeSet`: Lists new, modified, deleted files plus a force rebuild flag.
-- `PipelineState`, `DocumentationResult`: Represent state/results of doc pipeline.
-
-### Key Variables
-
-- `self.metadata_dir`, `self.metadata_file`: Disk location for persistence layer.
-- `self.logger`: Logging for debugging and audit.
-
----
+- `self.output_path`: Root of generated documentation.
+- `self.metadata_dir`, `self.metadata_file`: Subdirectory and file for storing metadata.
+- `self.logger`: Logger scoped to this module for all internal logs.
 
 ## Dependencies
 
-### External Modules
+### Internal Dependencies
 
-- `json`: For metadata serialization.
-- `hashlib`: SHA-256 hashing.
-- `os`, `pathlib.Path`, `time`: Filesystem and time operations.
-- `logging`: For internal logs.
+- `.models`
+  - Implicitly depends on data classes for `FileMetadata`, `GuideMetadata`, `ChangeSet`, `PipelineState`, and `DocumentationResult`.
+- Assumes `state` and various `PipelineState` members conform to the overall pipeline API.
 
-### Internal/Local
+### External/Standard Library
 
-- `.models`: Imports all data model/dataclass entities (`FileMetadata`, etc.) used for metadata representation and change tracking.
+- `json`, `hashlib`, `os`, `time`, `logging`
+- `pathlib.Path`
+- `typing` (for type annotations)
 
-### Usage Context
+### What Depends on This
 
-- **Depends on**: The output directory for documentation, a consistent `.models` file for data structures used across the pipeline, and pipeline invocation via `PipelineState` and related classes.
-- **Consumed by**: The documentation build process – typically called during stepwise doc generation and guide reassembly.
-
----
+- The main documentation generation pipeline, which will:
+  - Use this class to load/update metadata and to detect what files require documentation/guide (re)generation.
+  - Use detected `ChangeSet` to determine incremental vs. full guide/documentation builds.
 
 ## Usage Examples
 
-### Basic: Initialize Manager and Load Metadata
+### Basic: Detecting and Processing Changes
 
 ```python
 from pathlib import Path
 from src.guide_metadata_manager import GuideMetadataManager
+# ...import models as needed
 
-output_path = Path("docs")
+output_path = Path('docs/')
 manager = GuideMetadataManager(output_path)
-metadata = manager.load_metadata()
-```
 
-### Detect Changes and Decide If Rebuild Is Needed
+# Assuming pipeline_state and results have been computed earlier
+changeset = manager.detect_changes(pipeline_state, documentation_results)
 
-```python
-state = PipelineState(...)  # prepare pipeline state
-current_results = [...]     # list of DocumentationResult objects
-
-changeset = manager.detect_changes(state, current_results)
 if manager.should_force_full_rebuild(changeset):
-    print("Full documentation guide rebuild required.")
+    # trigger full regeneration of documentation/guide
+    pass
 else:
-    print(f"Partial update: {changeset}")
+    # perform incremental documentation/guide updates
+    pass
 ```
 
-### Update Per-file Metadata After Documentation Generation
+### After Documentation Generation
 
 ```python
+# After generating documentation entries
 generated_entries = {
-    "src/module.py": "Guide entry for module.py...",
-    # ...
+    # relative_path: guide_entry_content,
+    'src/module.py': 'Guide entry content here',
 }
-manager.update_metadata_after_generation(state, generated_entries)
+manager.update_metadata_after_generation(pipeline_state, generated_entries)
 ```
 
-### Hashing a File
+### Manual Metadata Inspection
 
 ```python
-hash_str = manager._calculate_file_hash(Path("docs/src/module_documentation.md"))
+metadata = manager.load_metadata()
+for relpath, filemeta in metadata.tracked_files.items():
+    print(f"{relpath}: last modified {filemeta.source_file_modified}")
 ```
-
----
 
 ## Additional Notes
 
-- **First Run:** If no metadata file exists, the manager will create new metadata and force a full rebuild.
-- **Robustness:** The manager handles partial or missing metadata gracefully, rebuilding/re-syncing as needed.
-- **Supported Extensions:** Discovered doc/source mapping supports arbitrary file extensions as configured.
-- **Concurrency:** Metadata writes use atomic replacement to avoid partial writes/corruption.
-- **Logging:** All major actions, errors, and change detections are logged.
-- **Integration:** This class is meant to be used solely from within a documentation/build system pipeline, not as a general-purpose metadata manager.
+- The metadata state is kept in `output_path/.documentation_state/guide_metadata.json`.
+- The logic is robust to first runs, missing files, or major structural changes.
+- All writes to the metadata file are atomic to avoid corruption.
+- Logging is employed at all significant events for easy tracing/debugging.
+- Changing >50% of tracked files triggers a full rebuild recommendation.
+- The file supports flexible configuration for source code extensions and expects integration with a broader documentation pipeline system.
 
 ---
 
-**See also:**  
-- `.models` for the definitions of `FileMetadata`, `GuideMetadata`, and associated types used throughout this manager.  
-- The main pipeline entrypoint for where/how `GuideMetadataManager` is invoked.
+**This file is foundational to robust, incremental, and scalable documentation pipelines, enabling selective and efficient guide/documentation regeneration across large codebases.**
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: 0fe104d428c31370a83bdd05c400ab522c3a72951be387154eb3b1421dc503f3
-relative_path: src\guide_metadata_manager.py
-generation_date: 2025-06-29T16:52:23.123083
+relative_path: src/guide_metadata_manager.py
+generation_date: 2025-06-30T00:07:47.110209
 ```
 <!-- END GENERATION METADATA -->

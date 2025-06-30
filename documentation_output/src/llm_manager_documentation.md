@@ -2,185 +2,142 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\llm_manager.py
+# Documentation for src/llm_manager.py
 
-# LLMManager (src/llm_manager.py)
+# `llm_manager.py`
 
 ## Purpose
-`LLMManager` centralizes the initialization and configuration of large language models (LLMs) from different providers (OpenAI or Anthropic). It abstracts away:
-- Model selection (by provider name).
-- API‐key retrieval (from config or environment).
-- Provider‐specific initialization parameters (e.g., timeouts, default model names).
 
-This enables downstream code to request a ready‐to‐use LLM instance without handling low‐level setup logic.
+This module provides the `LLMManager` class, which is responsible for initializing and configuring Large Language Model (LLM) clients for use within an application, based on configuration parameters. It abstracts and unifies access to different LLM providers—specifically OpenAI and Anthropic—using the [LangChain](https://langchain.dev/) integrations for these services.
+
+This abstraction allows the rest of the application to obtain a pre-configured LLM client from a supported provider without concerning itself with the details of provider selection, credential management, or low-level instantiation.
 
 ---
 
 ## Functionality
 
-### Class: LLMManager
-```python
-class LLMManager:
-    """Handles LLM initialization and configuration."""
-```
+### Overview
 
-#### `__init__(self, config_manager)`
-- **Parameters**  
-  - `config_manager`: An object with method `get_model_config()` returning a `dict` of model settings.
-- **Behavior**  
-  Stores the `config_manager` and configures a `logging.Logger` for internal status messages.
+- **LLMManager** is the main class, taking a configuration manager as its input dependency.
+- It reads the LLM provider and relevant parameters (API key, model name, temperature, etc.) from the configuration manager or environment variables.
+- It supports two providers:
+  - OpenAI (via `langchain_openai.ChatOpenAI`)
+  - Anthropic (via `langchain_anthropic.ChatAnthropic`)
+- Provides logging information about which model and provider have been initialized.
 
-#### `initialize_llm(self) -> Union[ChatOpenAI, ChatAnthropic]`
-- **Purpose**  
-  Entry point to create and return a configured LLM instance.
-- **Behavior**  
-  1. Calls `config_manager.get_model_config()`.
-  2. Reads the `"provider"` key (`"openai"` by default).
-  3. Delegates to either `_initialize_openai_llm` or `_initialize_anthropic_llm`.
-  4. Raises `ValueError` if the provider is unsupported.
+### Main Methods
 
-#### `_initialize_openai_llm(self, model_config: dict) -> ChatOpenAI`
-- **Purpose**  
-  Instantiate an OpenAI‐backed LLM client.
-- **Parameters**  
-  - `model_config`:  
-    - `"api_key"` (optional): Overrides `OPENAI_API_KEY` env var.  
-    - `"name"` (optional, default `"gpt-4o"`): Model identifier.  
-    - `"temperature"` (optional, default `0.2`): Sampling temperature.
-- **Behavior**  
-  1. Resolves `api_key` from config or `os.getenv("OPENAI_API_KEY")`.  
-  2. Raises `ValueError` if no key is found.  
-  3. Constructs `ChatOpenAI(...)` and logs an info message.
+#### `initialize_llm(self)`
 
-#### `_initialize_anthropic_llm(self, model_config: dict) -> ChatAnthropic`
-- **Purpose**  
-  Instantiate an Anthropic‐backed LLM client.
-- **Parameters**  
-  - `model_config`:  
-    - `"api_key"` (optional): Overrides `ANTHROPIC_API_KEY` env var.  
-    - `"name"` (optional, default `"claude-3.5-sonnet-latest"`): Model identifier.  
-    - `"temperature"` (optional, default `0.2`): Sampling temperature.  
-    - `"timeout"` (optional, default `60.0`): Request timeout in seconds.
-- **Behavior**  
-  1. Resolves `api_key` from config or `os.getenv("ANTHROPIC_API_KEY")`.  
-  2. Raises `ValueError` if no key is found.  
-  3. Constructs `ChatAnthropic(...)` and logs an info message.
+- Determines which provider to use (OpenAI or Anthropic).
+- Calls the respective initialization helper (`_initialize_openai_llm` or `_initialize_anthropic_llm`).
+- Returns an instance configured for the chosen provider.
+
+#### `_initialize_openai_llm(self, model_config)`
+
+- Acquires the OpenAI API key from the configuration or the `OPENAI_API_KEY` environment variable.
+- Raises an error if the API key can't be found.
+- Instantiates and returns a `ChatOpenAI` object with specified model name and temperature.
+- Logs model initialization.
+
+#### `_initialize_anthropic_llm(self, model_config)`
+
+- Similar to OpenAI, fetches the Anthropic API key from config or `ANTHROPIC_API_KEY` environment variable.
+- Raises an error if the key is missing.
+- Instantiates and returns a `ChatAnthropic` object with specified parameters including timeout.
+- Logs model initialization.
 
 ---
 
 ## Key Components
 
-- **LLMManager**  
-  Orchestrates model‐provider selection and client instantiation.
-- **config_manager**  
-  External object (injected) responsible for supplying user/config‐file settings.
-- **model_config** (`dict`)  
-  Dictionary with keys:
-  - `provider`: `"openai"` | `"anthropic"`
-  - `api_key` (optional)
-  - `name` (optional)
-  - `temperature` (optional)
-  - `timeout` (Anthropic only, optional)
-- **ChatOpenAI**  
-  Class from `langchain_openai` used to interact with OpenAI models.
-- **ChatAnthropic**  
-  Class from `langchain_anthropic` used to interact with Anthropic models.
-- **Logger**  
-  Standard `logging` logger for info and error reporting.
+### Classes
+
+- **LLMManager**
+  - `__init__(config_manager)`: Stores reference to the configuration, prepares logger.
+  - `initialize_llm()`: Public method to create the right LLM client.
+  - `_initialize_openai_llm(model_config)`: Helper for OpenAI setup.
+  - `_initialize_anthropic_llm(model_config)`: Helper for Anthropic setup.
+
+### Dependencies
+
+- `os`: To access environment variables for API keys.
+- `logging`: To log provider/model initialization.
+- `langchain_openai.ChatOpenAI`: Client for OpenAI LLMs.
+- `langchain_anthropic.ChatAnthropic`: Client for Anthropic LLMs.
+- `config_manager` (an external object): Must provide a `get_model_config()` method returning a dictionary with LLM configuration parameters.
+
+### Key Variables
+
+- **config_manager**: Externally provided configuration interface.
+- **logger**: For logging initiation events and errors.
 
 ---
 
 ## Dependencies
 
-### Python Packages
-- `langchain_openai.ChatOpenAI`
-- `langchain_anthropic.ChatAnthropic`
-- Standard library: `os`, `logging`, `typing.Union`
+**Required:**
 
-### Environment Variables
-- `OPENAI_API_KEY` (fallback for OpenAI)
-- `ANTHROPIC_API_KEY` (fallback for Anthropic)
+- [`langchain-openai`](https://pypi.org/project/langchain-openai/) (`ChatOpenAI`)
+- [`langchain-anthropic`](https://pypi.org/project/langchain-anthropic/) (`ChatAnthropic`)
+- Python standard libraries: `os`, `logging`
+- A configuration manager object passed to `LLMManager`, with a `get_model_config()` method.
 
-### Config Manager Contract
-Any object passed as `config_manager` must implement:
-```python
-def get_model_config() -> dict:
-    """
-    Returns a dictionary containing at least the key 'provider'
-    and optionally 'api_key', 'name', 'temperature', 'timeout'.
-    """
-```
+**Used by:**
 
-### Downstream Usage
-Components that require an LLM instance rely on:
-```python
-llm = LLMManager(config_manager).initialize_llm()
-```
-and then use the returned `llm` for chat/completion calls.
+- All application components needing a configured LLM client (ChatOpenAI or ChatAnthropic) for inference or chat tasks.
 
 ---
 
 ## Usage Examples
 
-### 1. Simple OpenAI Initialization
 ```python
-# Mock config manager
-class SimpleConfig:
-    def get_model_config(self):
-        return {
-            "provider": "openai",
-            "api_key": "sk-xyz123",
-            "name": "gpt-4",
-            "temperature": 0.1
-        }
+# Assume you have a config_manager object with a get_model_config() method
+from src.llm_manager import LLMManager
 
-config = SimpleConfig()
-manager = LLMManager(config)
-openai_llm = manager.initialize_llm()
+config_manager = ...  # Your config manager implementation
 
-# Now you can call openai_llm.chat(...) or similar
+llm_manager = LLMManager(config_manager)
+
+# Initialize the proper LLM client based on configuration (OpenAI or Anthropic)
+llm_client = llm_manager.initialize_llm()
+
+# Now use the llm_client for your inference tasks (see LangChain docs for details)
+response = llm_client.invoke("Hello, world!")
+
+print(response)
 ```
 
-### 2. Using Environment Variables
-```bash
-export OPENAI_API_KEY="sk-env-abc"
-```
+**Example configuration (which config_manager.get_model_config() might return):**
 ```python
-class EnvConfig:
-    def get_model_config(self):
-        return {"provider": "openai", "name": "gpt-3.5-turbo"}
-
-env_manager = LLMManager(EnvConfig())
-llm = env_manager.initialize_llm()
-# API key is pulled from OPENAI_API_KEY
+{
+    "provider": "openai",
+    "name": "gpt-4o",
+    "temperature": 0.3,
+    "api_key": "sk-...",
+}
 ```
 
-### 3. Anthropic Model with Custom Timeout
-```python
-class AnthropicConfig:
-    def get_model_config(self):
-        return {
-            "provider": "anthropic",
-            "api_key": "anthropic-key-123",
-            "name": "claude-3.5-sonnet",
-            "temperature": 0.5,
-            "timeout": 120.0
-        }
-
-anthropic_manager = LLMManager(AnthropicConfig())
-anthropic_llm = anthropic_manager.initialize_llm()
-```
+If API keys are not provided in configuration, be sure that
+- `OPENAI_API_KEY` (for OpenAI) or
+- `ANTHROPIC_API_KEY` (for Anthropic)
+are set in your environment variables.
 
 ---
 
-By encapsulating provider logic and key management, `LLMManager` ensures consistent LLM setup across your application.
+## Notes
+
+- If an unsupported provider is specified, a `ValueError` will be raised.
+- If the necessary API key is missing, a `ValueError` will be raised.
+- Timeouts for Anthropic models can be specified in the configuration, defaulting to 60 seconds.
+- This module does not perform any model inference itself—it just constructs and returns the appropriate, configured LLM backend for consumer code to use.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: ae3dcf853c1e98944816eb7e8e33a09c27f943f416711fcb1206e933a7a8d47d
-relative_path: src\llm_manager.py
-generation_date: 2025-06-10T22:38:41.199815
+relative_path: src/llm_manager.py
+generation_date: 2025-06-30T00:08:08.491228
 ```
 <!-- END GENERATION METADATA -->

@@ -83,6 +83,10 @@ class MCPState(BaseModel):
     # Processing state
     llm_analysis_complete: bool = False
     
+    # Raw LLM responses (for internal workflow processing)
+    raw_llm_response: dict = Field(default_factory=dict)
+    raw_synthesis_response: dict = Field(default_factory=dict)
+    
     # Results
     relevant_files_result: Optional[MCPRelevantFilesResponse] = None
     feature_understanding_result: Optional[MCPFeatureResponse] = None

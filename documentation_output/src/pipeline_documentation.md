@@ -2,209 +2,147 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\pipeline.py
+# Documentation for src/pipeline.py
 
-# `pipeline.py`
+# pipeline.py
 
 ## Purpose
 
-This file defines the primary orchestration pipeline for automated codebase documentation using large language models (LLMs) and modular processing steps. It structures the workflow for generating file-level documentation, design documents, and documentation guides from a project's source code, coordinating all the necessary subsystems and managing state between steps.
-
-The pipeline leverages a LangGraph-based state machine to process inputs, gather context, invoke document generation, handle guide and design documentation, and save or report results. It makes the documentation process modular, scalable, and robust to errors.
-
----
+The `pipeline.py` file implements the core pipeline for automated documentation generation of code repositories. It orchestrates the process of scanning source code, generating per-file documentation, producing documentation guides, and assembling high-level design documents. This workflow is intended to automate and systematize documentation tasks for software projects, improving maintainability and developer onboarding.
 
 ## Functionality
 
-The main component is the `DocumentationPipeline` class. This class:
+The **DocumentationPipeline** class encapsulates the end-to-end workflow for documentation generation. It utilizes the [LangGraph](https://python.langgraph.org/) library to construct and manage a dynamic stateful pipeline, enabling conditional branching and modular node execution for various documentation tasks.
 
-- Loads configuration settings and initializes all subcomponents
-- Defines a detailed state machine (LangGraph workflow) for documentation processing
-- Implements functions for each node and decision in the workflow (e.g., loading docs, generating file docs, guide, or design docs)
-- Handles logging, state management, error handling, and saving of intermediate and final results
-- Provides a public `.run()` method to drive end-to-end documentation generation for a given repository
+Key functionalities include:
 
----
+- Orchestrating the overall documentation workflow through a configurable graph.
+- Loading and summarizing existing documentation.
+- Scanning the code repository for files.
+- Generating documentation for each code file using an LLM (Large Language Model).
+- Incrementally generating or updating documentation guides.
+- Producing structured design documents from code and documentation context.
+- Saving, logging, and reporting results at each relevant stage.
 
 ## Key Components
 
-### 1. `DocumentationPipeline`
+### Main Class
 
-**Purpose**: Central class managing the end-to-end documentation generation workflow.
+#### `DocumentationPipeline`
 
-#### Primary methods:
+- **Initialization**: Loads configuration, sets up subsystems (LLM, document/code processing, file operations, state/context management).
+- **Pipeline Construction**: Assembles a LangGraph workflow—nodes represent major documentation steps; edges manage control flow logic (e.g., when to skip or repeat).
+- **Pipeline Node Methods**: Implement the actual units of work, delegating to specialized managers/subsystems as appropriate for each step:
+    - Loading/summarizing existing docs
+    - Scanning repositories and file processing
+    - Generating per-file documentation
+    - Generating and updating documentation guides
+    - Initializing and assembling design documents
+    - Saving documentation results and reports
 
-- **`__init__(self, config_path: str = "config.yaml")`**:  
-  Initializes configuration, logging, LLM engine, and component modules (guide generator, processors, analyzers, etc.).
+- **State Management Methods**: Encapsulate the pipeline's decision logic to determine flow between nodes (e.g., whether to skip redundant steps, handle incremental updates).
 
-- **`create_pipeline(self)`**:  
-  Constructs the LangGraph-based state machine by adding nodes (steps) and edges (transitions/decisions). Returns the compiled pipeline workflow.
+- **`run()`**: The entrypoint for running the pipeline. Configures the flow (actions chosen, paths), validates user intent, initializes pipeline state, and invokes the compiled workflow.
 
-- **Workflow Node Methods**  
-  These are executed at various points in the pipeline:
-    - `load_existing_docs`
-    - `load_existing_documentation`
-    - `load_documentation_guide`
-    - `summarize_docs`
-    - `scan_repository`
-    - `generate_documentation`
-    - `generate_documentation_guide_node`
-    - `generate_design_documentation`
-    - `initialize_design_documents`
-    - `generate_design_section`
-    - `assemble_design_document`
-    - `save_results`
-    - ... and others for decision points.
+### Important Supporting Components/Managers
 
-- **State / Condition Methods**  
-  Used for pipeline branching and checks:
-    - `should_load_existing_docs`
-    - `should_summarize`
-    - `should_generate_files`
-    - `has_more_files`
-    - `should_generate_guide`
-    - `should_generate_design_docs`
-    - `has_more_sections`
-    - `has_more_documents`
-    - ... etc.
+- `ConfigManager`
+- `DocumentProcessor`
+- `CodeAnalyzer`
+- `LLMManager`
+- `GuideGenerator`
+- `DesignDocumentGenerator`
+- `FileProcessor`
+- `ReportGenerator`
+- `ContextManager`
+- `StateManager`
 
-- **`run(self, repo_path, docs_path=None, ...)`**:  
-  Entrypoint method. Sets up inputs, initializes pipeline state, and executes the full documentation workflow for a given repository.
+These are imported from sibling modules and provide well-defined interfaces for configuration, LLM operations, code scanning, file reading/writing, and state/context orchestration.
 
----
+### Key Data Models
 
-### 2. Helper Classes & Modules
+- `PipelineState`: Holds the evolving state of the pipeline.
+- `DocumentationContext`: Encapsulates documentation-related information and context.
+- `DocumentationRequest`: Models the parameters and intentions for this run.
+- `DocumentationResult`/`CodeFile`: Store results or represent code files to be documented.
 
-The pipeline depends on a modular set of processing, management, and utility classes, each imported at the top of the file:
+### Important Constants
 
-- **Configuration & Models**
-  - `ConfigManager`
-  - `PipelineState`, `DocumentationContext`, `DocumentationResult`, `DocumentationRequest`, `CodeFile`
-
-- **Code and Document Processing**
-  - `DocumentProcessor` – Handles tokenization, context prep, and doc loading
-  - `CodeAnalyzer` – Scans repo and detects code files for documentation
-  - `FileProcessor` – Manages logic for file-level documentation creation and skipping, and saving results
-
-- **LLM, Context, and State Management**
-  - `LLMManager` – Initializes and interfaces with the large language model
-  - `ContextManager` – Handles context enhancement, summarization, and guide loading
-  - `StateManager` – Contains logic for pipeline state transitions, condition evaluations
-
-- **Document and Report Generation**
-  - `GuideGenerator` – Generates high-level documentation guides
-  - `DesignDocumentGenerator` – Manages design doc structure and content generation
-  - `ReportGenerator` – Produces and saves summary reports
-
-- **Prompt Templates**
-  - Imports pre-defined prompt messages (such as `GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`) for use with LLMs.
-
----
-
-### 3. Key Variables and External Dependencies
-
-- **LangGraph**:  
-  The `StateGraph` and `END` from `langgraph.graph` power the workflow state machine, representing sequential and conditional flows.
-- **LangChain/LangGraph Core**:  
-  For prompts and messages, crucial when interacting with the LLM.
-
----
+- `GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`: System prompt for LLM-based code documentation generation.
 
 ## Dependencies
 
-### Imports (with roles):
+### Required Python Libraries & Modules
 
-- **from `langgraph.graph`**:  
-  `StateGraph`, `END` – for the execution of the workflow graph
-- **from `langchain_core.prompts` and `.messages`**:  
-  Facilitate prompt composition for LLM calls.
-- **from local project modules**:  
-  Imports for processors, analyzers, managers, generators, models, and configuration managers.
+- **Standard libraries:** `datetime`, `logging`, `pathlib`, `typing`
+- **LangChain/LangGraph:** `langgraph`, `langchain_core` for state graph execution and prompt composition.
+- **Custom modules:** All main pipeline subsystems, configuration, processing, and models are imported from sibling files (assumed to be part of this codebase's `src` package).
 
-### Expected project structure dependencies:
+### External Interactions
 
-- Config: expects `"config.yaml"` or another config file for setup
-- Models: expects a domain-specific definition of all model classes for state and documentation artifacts
-- Local modules: expects all referenced internal modules next to or under `src/`
-
----
-
-### What depends on this file?
-
-- The pipeline is intended to be a central orchestrator, so it is likely invoked by:
-  - Command-line interfaces (CLI entrypoints)
-  - Automated scripts or jobs calling `.run()` on a `DocumentationPipeline` instance
-  - Potentially integration points for web UI or CI/CD hooks
-
----
+- Reads/writes configuration and documentation files.
+- Logs results to the console and to `documentation_pipeline.log`.
+- Relies on LLM backends as configured via `LLMManager`.
 
 ## Usage Examples
 
-### Example 1: Simple Repository Documentation
+### Basic: Generate Documentation for a Code Repository
 
 ```python
-from src.pipeline import DocumentationPipeline
 from pathlib import Path
+from src.pipeline import DocumentationPipeline
 
-pipeline = DocumentationPipeline("config.yaml")
+repo_path = Path("/path/to/source/repo")
+pipeline = DocumentationPipeline(config_path="config.yaml")
+
+# Run pipeline to generate file-level documentation and guide
 final_state = pipeline.run(
-    repo_path=Path("/path/to/repo"),
-    docs_path=Path("/path/to/docs"),       # Existing docs, optional
-    output_path=Path("/path/to/output"),   # Output location, optional
-    file_docs=True,    # Generate file-level docs
-    design_docs=True,  # Generate design docs
-    guide=True,        # Generate documentation guide
-    force_full_guide=False,  # Optional: force guide regeneration
+    repo_path=repo_path,
+    docs_path=None,          # Use default, or specify path to docs folder
+    output_path=None,        # (Optional) output location for documentation
+    file_docs=True,          # Generate per-file documentation
+    design_docs=False,       # Do not generate design docs
+    guide=True,              # Generate a documentation guide
+    force_full_guide=False,  # Do not force complete regeneration
 )
-print("Documentation complete. Final state:", final_state)
+
+print("Pipeline complete. Results summary:")
+print(final_state)
 ```
 
-### Example 2: Incremental File Docs Only
+### Advanced: With All Outputs and Force Guide Regeneration
 
 ```python
-pipeline = DocumentationPipeline()
-state = pipeline.run(
-    repo_path=Path("my/project"),
+pipeline = DocumentationPipeline(config_path="custom_config.yaml")
+final_state = pipeline.run(
+    repo_path=Path("/my/project"),
+    docs_path=Path("/my/project/docs"),
+    output_path=Path("/my/project/generated-docs"),
     file_docs=True,
-)
-print(f"File documentation generation complete: Success for {len([r for r in state.results if r.success])} files.")
-```
-
-### Example 3: Design-Docs-Only Flow
-
-```python
-pipeline = DocumentationPipeline()
-state = pipeline.run(
-    repo_path=Path("my/project"),
     design_docs=True,
+    guide=True,
+    force_full_guide=True,
 )
-print("Design documents generated.")
 ```
-
----
 
 ## Additional Notes
 
-- **Error Handling**:  
-  Extensive logging, error catch-and-report around LLM invocation and file processing ensure robust operation and troubleshooting.
-- **State-Driven**:  
-  The use of an explicit state structure (`PipelineState`) ensures idempotence and transparency in multi-step processes.
-
-- **Extensibility**:  
-  Subsystems are injected as class attributes, enabling future replacement or enhancement (e.g., swapping out LLM providers or custom file processors).
+- This pipeline supports incremental and partial generation: it can skip unchanged files or only update parts of the documentation as needed.
+- Logging is configurable via the pipeline's configuration file.
+- Functionality is easily extendable via new node or state manager implementations, following the established node/edge pattern.
+- This file does not itself provide a CLI; it is designed for programmatic use or as an imported orchestration module.
 
 ---
 
-## Summary
-
-The `pipeline.py` file represents the "director" of the AI-powered documentation system. It brings together configuration, repository scanning, LLM-invoked documentation generation, and reporting into a robust, modular, and extendable workflow, relying on the LangGraph state machine for orchestration and user-provided options for behavior customization. Use its `DocumentationPipeline.run(...)` interface in scripts or tools to automate standardized, comprehensive documentation for codebases.
+**Tip for Developers:**  
+Read the docstrings for each method in the `DocumentationPipeline` class for more granular explanations of logic and extension points. For configuration options and required inputs, consult the appropriate modules (`config.py`, `models.py`).
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: f8ef07bc310278254af4fe3283f3fd5a916093c207f77348cc4147ef9514770e
-relative_path: src\pipeline.py
-generation_date: 2025-06-29T16:52:57.409522
+relative_path: src/pipeline.py
+generation_date: 2025-06-30T00:10:21.985431
 ```
 <!-- END GENERATION METADATA -->
