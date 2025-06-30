@@ -1,0 +1,14 @@
+{
+    "python.pythonPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}/venv/Scripts/python.exe",
+    "mcp.servers": {
+        "documentation-server": {
+            "command": "${workspaceFolder}/venv/Scripts/python.exe",
+            "args": [
+                "${workspaceFolder}/mcp_server.py",
+                "${workspaceFolder}"
+            ],
+            "cwd": "${workspaceFolder}"
+        }
+    }
+}

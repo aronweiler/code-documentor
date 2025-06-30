@@ -4,131 +4,183 @@
 
 # Documentation for main.py
 
-# main.py Documentation
+# main.py
 
 ## Purpose
 
-The `main.py` file serves as the command-line interface (CLI) entry point for the documentation generation toolkit. It provides three primary subcommands:
-
-- **generate**: Run a full documentation generation pipeline.
-- **analyze**: Inspect and report on a code repository’s structure.
-- **validate-config**: Verify the configuration file and API key setup.
-
-This file orchestrates argument parsing, dispatches to the appropriate workflows, and handles high-level error reporting.
+`main.py` is the entry point for a tool that generates, analyzes, and validates documentation for code repositories. This script provides a command-line interface (CLI) for users to generate detailed documentation, analyze a codebase’s structure, and validate the documentation configuration and API keys. It supports subcommands for flexible and user-friendly interactions with the tool.
 
 ---
 
 ## Functionality
 
-1. **Argument Parsing**  
-   - Determines whether to use _subcommand_ parsing (`generate`, `analyze`, `validate-config`) or _direct_ parsing (backward compatibility for the `generate` command).  
-   - Defines and injects common and command-specific arguments using `argparse`.
+The script’s primary responsibilities are:
 
-2. **Command Dispatch**  
-   - Based on the parsed `args.command`, invokes one of:
-     - `run_documentation_generation(args)`
-     - `run_repository_analysis(args)`
-     - `run_config_validation(args)`
+- **Parsing command-line arguments** to determine which operation to perform (generate, analyze, validate-config).
+- **Triggering the correct pipeline** based on user input, handling errors and providing helpful output.
+- **Providing usage examples and help** for all supported commands and options.
 
-3. **Error Handling**  
-   - Catches keyboard interrupts and other exceptions to print user-friendly messages.  
-   - Optionally prints stack traces if the `--verbose` flag is enabled.
+Supported subcommands:
+
+- `generate`: Generates documentation for a repository, with options for file docs, design docs, and documentation guides.
+- `analyze`: Scans and reports on repository file structure and size metrics, without generating documentation.
+- `validate-config`: Loads and validates the YAML configuration file and relevant API credentials.
 
 ---
 
 ## Key Components
 
-### 1. `main()`
-- Entry point when `main.py` is executed.
-- Chooses parsing mode, dispatches to subcommands, and wraps execution in exception handlers.
+### 1. Main Entry and Control Flow
 
-### 2. Argument-Builder Functions
-- `create_subcommand_parser()`: Builds an `ArgumentParser` with three subcommands: `generate`, `analyze`, `validate-config`.
-- `create_direct_parser()`: Builds a backward-compatible `ArgumentParser` for `generate` only.
-- `add_generate_arguments(parser)`: Injects common arguments used by the `generate` subcommand.
+- **main()**  
+  The entry-point function that parses arguments, selects subcommands, and catches exceptions for graceful exits.
 
-### 3. Command Runners
-- `run_documentation_generation(args)`
-  - Validates that at least one doc type flag (`--file-docs`, `--design-docs`, `--guide`) is set.
-  - Verifies repository and docs paths.
-  - Instantiates `DocumentationPipeline(config_path)` and runs it.
-  - Summarizes results: counts of generated, skipped, and failed files.
-- `run_repository_analysis(args)`
-  - Loads configuration via `ConfigManager`.
-  - Uses `CodeAnalyzer` to scan and analyze file structure.
-  - Prints metrics: total files, breakdown by extension and directory, largest files, and any configured processing limits.
-- `run_config_validation(args)`
-  - Loads and prints configuration details (model provider, temperature).
-  - Tests the presence and validity of the API key.
-  - Displays processing limits, supported extensions, exclude patterns, and design-doc settings.
+### 2. Argument Parsing
+
+- **create_subcommand_parser()**  
+  Defines and returns an ArgumentParser that supports `generate`, `analyze`, and `validate-config` subcommands.
+- **create_direct_parser()**  
+  Provides direct argument parsing for backward compatibility (without subcommands).
+- **add_generate_arguments(parser)**  
+  Adds arguments relevant to the `generate` operation.
+
+### 3. Pipeline Runners
+
+- **run_documentation_generation(args)**  
+  Invokes `DocumentationPipeline` to perform documentation generation. Validates arguments and paths, handles combined generation flags, and prints a summary report.
+- **run_repository_analysis(args)**  
+  Utilizes `ConfigManager` and `CodeAnalyzer` to scan the repository, analyze the structure, and print summaries: file types, directory breakdown, largest files, and max processing limit.
+- **run_config_validation(args)**  
+  Loads and validates the YAML configuration, model provider and API key, and checks file/documentation processing settings.
+
+---
+
+## Key Modules, Classes, and Variables
+
+- **argparse**: Used for CLI argument and subcommand parsing.
+- **sys**: For accessing command-line arguments and exiting with error codes.
+- **pathlib.Path**: Path handling for file and directory arguments.
+- **src.pipeline.DocumentationPipeline**: Orchestrates the main documentation workflow.
+- **src.config.ConfigManager**: Loads and validates configuration settings and API keys.
+- **src.code_analyzer.CodeAnalyzer**: Scans the repository and analyzes file structures.
+- **src.document_processor.DocumentProcessor**: (Imported but not directly used here; likely used by pipeline classes.)
+
+**Key variables:**
+
+- `args`: Holds parsed arguments for use in subcommand handler functions.
 
 ---
 
 ## Dependencies
 
-### Standard Library
-- `argparse` — CLI argument parsing.
-- `sys` — Access to command‐line arguments and exit.
-- `pathlib.Path` — Filesystem path manipulations.
+### Imports (Direct dependencies)
+- argparse (standard library)
+- sys (standard library)
+- pathlib.Path (standard library)
+- `DocumentationPipeline` from `src.pipeline`
+- `ConfigManager` from `src.config`
+- `CodeAnalyzer` from `src.code_analyzer`
+- `DocumentProcessor` from `src.document_processor` (not used directly here)
 
-### Local Modules (in `src/`)
-- `DocumentationPipeline` (in `src/pipeline.py`)  
-- `ConfigManager` (in `src/config.py`)  
-- `CodeAnalyzer` (in `src/code_analyzer.py`)  
-- `DocumentProcessor` (in `src/document_processor.py`)  
+### External Files
+- `config.yaml`: Configuration for documentation and provider settings (default, overrideable by `--config`).
 
-_No other project files depend on `main.py`; it is the top‐level launcher._
+### Inter-Module Dependencies
+
+- This file depends on the logic and data models defined in the `src.pipeline`, `src.config`, and `src.code_analyzer` modules.
+- Other project scripts or automated entrypoints will rely on `main.py` as the executable CLI interface.
 
 ---
 
 ## Usage Examples
 
-### 1. Generate Documentation
-```
-# File docs only
-python main.py generate -r /path/to/repo -f
+### Generate Documentation (Subcommand style)
 
-# Design docs only
-python main.py generate -r /path/to/repo -D
+Generate documentation for a repository (`-r`) with only file-level documentation:
 
-# Both file & design docs, and a guide
-python main.py generate \
-  -r /path/to/repo \
-  -f -D -g \
-  -c custom_config.yaml \
-  -d /path/to/existing_docs \
-  -o /path/to/output_docs \
-  --verbose
+```sh
+python main.py generate -r path/to/repo -f
 ```
 
-### 2. Analyze Repository Structure
-```
-python main.py analyze /path/to/repo \
-  --config custom_config.yaml
+Generate both file and design documentation:
+
+```sh
+python main.py generate -r path/to/repo -f -D
 ```
 
-### 3. Validate Configuration
-```
-python main.py validate-config \
-  --config custom_config.yaml
+Generate only the documentation guide:
+
+```sh
+python main.py generate -r path/to/repo -g
 ```
 
-### 4. Backward Compatibility (Direct Parsing)
+Generate all documentation types, specify output, and show verbose logs:
+
+```sh
+python main.py generate -r path/to/repo -f -D -g -o path/to/output -v
 ```
-# Equivalent to `generate -r /path/to/repo -f`
-python main.py -r /path/to/repo -f
+
+### Analyze Repository Structure
+
+```sh
+python main.py analyze path/to/repo
+```
+
+### Validate Configuration and API Keys
+
+```sh
+python main.py validate-config --config custom_config.yaml
+```
+
+### Direct Usage (Backward Compatibility)
+
+If you omit the subcommand for legacy use, e.g.:
+
+```sh
+python main.py -r path/to/repo -f
+```
+
+This is equivalent to:
+
+```sh
+python main.py generate -r path/to/repo -f
 ```
 
 ---
 
-*End of `main.py` documentation.*
+## Example Output
+
+- On success, generates a summary of processed files, skipped files (no changes), and failures.
+- For analysis, lists file extensions, directories, and the largest files.
+- For validation, displays parsed configuration settings and whether API keys appear valid.
+
+---
+
+## Error Handling
+
+- All commands gracefully handle `KeyboardInterrupt` (Ctrl+C) and print user-friendly error messages.
+- If verbose mode (`-v`) is enabled, stack traces are shown for unhandled exceptions.
+
+---
+
+## Notes
+
+- This entry script expects the necessary configuration and pipeline logic to live under the `src/` directory.
+- Only the relevant command is executed depending on user input.
+- Example usage is shown in CLI help and the script’s docstrings.
+
+---
+
+## Conclusion
+
+`main.py` provides a robust, user-friendly CLI for generating, analyzing, and validating documentation for code repositories, serving as the primary entry point for the project’s automation and integration workflows.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: 7e929a51da90d7040bd515957ceef0b0e69dbee8b131d4baebdee2aa84ffa05f
+file_hash: 41b15a8ed567ffdbba2e7fb0ca90a81f28b91ac1efd20fe9122a372905ce9beb
 relative_path: main.py
-generation_date: 2025-06-10T21:51:43.125410
+generation_date: 2025-06-30T00:03:04.025791
 ```
 <!-- END GENERATION METADATA -->

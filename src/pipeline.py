@@ -207,7 +207,31 @@ class DocumentationPipeline:
             return {"completed": True}
 
         print("Generating documentation guide...")
-        guide = self.guide_generator.generate_documentation_guide(state)
+        
+        # Check if full regeneration is forced
+        if state.request.force_full_guide:
+            print("Full guide regeneration forced by command-line option...")
+            guide = self.guide_generator.generate_documentation_guide(state)
+        else:
+            # Detect changes for incremental generation
+            changeset = self.guide_generator.detect_guide_changes(state)
+            
+            # Use incremental generation if changes are detected
+            if changeset.new_files or changeset.modified_files or changeset.deleted_files:
+                if changeset.force_full_rebuild:
+                    print("Full guide rebuild required...")
+                    guide = self.guide_generator.generate_documentation_guide(state)
+                else:
+                    print(f"Incremental guide update: {len(changeset.new_files)} new, {len(changeset.modified_files)} modified, {len(changeset.deleted_files)} deleted files")
+                    guide = self.guide_generator.generate_incremental_guide(state)
+            else:
+                print("No changes detected, guide is up to date")
+                # Load existing guide
+                guide = self.guide_generator._load_existing_guide(state)
+                if not guide:
+                    # Fallback to generation if no existing guide
+                    guide = self.guide_generator.generate_documentation_guide(state)
+        
         self.guide_generator.save_documentation_guide(state, guide)
 
         # Add guide to existing docs context for design document generation
@@ -454,6 +478,7 @@ class DocumentationPipeline:
         file_docs: bool = False,
         design_docs: bool = False,
         guide: bool = False,
+        force_full_guide: bool = False,
     ) -> PipelineState:
         """Run the complete documentation pipeline."""
 
@@ -474,6 +499,7 @@ class DocumentationPipeline:
             file_docs=file_docs,
             design_docs=design_docs,
             guide=guide,
+            force_full_guide=force_full_guide,
         )
 
         # Create initial state with empty existing_docs

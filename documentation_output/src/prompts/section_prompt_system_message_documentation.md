@@ -2,86 +2,91 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\prompts\section_prompt_system_message.py
+# Documentation for src/prompts/section_prompt_system_message.py
 
-# Documentation for `section_prompt_system_message.py`
+# File: `src/prompts/section_prompt_system_message.py`
 
 ## Purpose
 
-The purpose of this file is to define a system message template used by a technical documentation generator. This template guides the generator in creating a specific section of a design document by providing structured instructions and context. It is designed to facilitate the generation of comprehensive and well-informed documentation by leveraging available tools to explore and understand the project codebase.
+This file defines a system message prompt template used by a technical documentation generation tool or assistant. The template guides an AI system to generate documentation sections for a project design document. It ensures the AI follows a structured workflow to gather information and produce accurate, comprehensive documentation for each section.
 
 ## Functionality
 
-The file contains a single string variable, `SECTION_PROMPT_SYSTEM_MESSAGE`, which serves as a template for generating documentation sections. This template includes placeholders for dynamic content and instructions for using various file exploration tools to gather necessary information about the project.
+The main functionality of this file is the declaration of a multi-line string (`SECTION_PROMPT_SYSTEM_MESSAGE`) that serves as a prompt. This prompt is formatted for use with an AI language model or documentation generator, setting out:
+- Context (project document and section names, prior content)
+- Specific instructions for generating a documentation section
+- A list of file exploration tools available to the system, with guidance on their use
 
-### Detailed Explanation
-
-- **`SECTION_PROMPT_SYSTEM_MESSAGE`**: This is a multi-line string that acts as a template for generating sections of a design document. It includes placeholders for:
-  - `document_name`: The name of the document being generated.
-  - `section_name`: The specific section of the document being created.
-  - `context`: Existing documentation and previous sections' context to ensure continuity and relevance.
-  - `section_template`: Specific instructions for what the section should contain.
-
-The template emphasizes the importance of using file reading tools to gather comprehensive information about the project before writing the documentation. It lists available tools that can be used to explore the repository and gather necessary data.
+The prompt ensures the generated documentation is rooted in a thorough understanding of the repository, using file reading and directory browsing tools as necessary.
 
 ## Key Components
 
-- **String Template**: The `SECTION_PROMPT_SYSTEM_MESSAGE` is a critical component that guides the documentation generation process.
-- **Placeholders**: The template includes placeholders for dynamic content insertion, ensuring that the generated documentation is specific and relevant to the project context.
-- **Tool Instructions**: The template provides instructions on using specific tools to explore the codebase, which is crucial for generating accurate and detailed documentation.
+### Constants
+
+- **`SECTION_PROMPT_SYSTEM_MESSAGE`**
+  - **Type:** `str`
+  - **Purpose:** Serves as the system-level instruction for guiding the documentation generation process.
+  - **Content:** Includes placeholders for:
+    - `{document_name}`: Name of the target document
+    - `{section_name}`: Name of the section to generate
+    - `{context}`: Contextual information from existing documentation or prior sections
+    - `{section_template}`: Detailed instructions or a template for the section
+  - **Instructions:**
+    - Emphasizes exploration of the codebase before writing documentation
+    - Lists available helper tools (for reading files, listing directories, etc.) and instructs strategic use of these tools
 
 ## Dependencies
 
-### Internal Dependencies
+### Dependencies this file has:
+- **None (runtime):**  
+  This file contains only a prompt string and does not import any modules or reference any other parts of the codebase.
 
-- The file does not explicitly import or depend on other modules within the codebase. However, it assumes the existence of certain tools for file exploration, which are likely defined elsewhere in the project.
-
-### External Dependencies
-
-- There are no external libraries or modules directly imported or used in this file.
-
-### Dependent Components
-
-- This file is likely used by a larger documentation generation system that utilizes the `SECTION_PROMPT_SYSTEM_MESSAGE` template to automate the creation of design document sections.
+### Dependencies on this file:
+- **Upstream code or infrastructure that:**
+  - Invokes AI agents, documentation assistants, or LLM-driven processes.
+  - Loads this prompt string during the documentation generation workflow, passing the formatted message to the AI system with the necessary variable substitutions (e.g., actual document name, section, context, template, etc.).
 
 ## Usage Examples
 
-This code is typically used within a documentation generation system. Here is a conceptual example of how it might be used:
+While this file is not directly executable, it is used programmatically as part of a larger documentation generation system. For example:
 
 ```python
-# Example usage within a documentation generation system
+from src.prompts.section_prompt_system_message import SECTION_PROMPT_SYSTEM_MESSAGE
 
-# Assume we have a function that generates documentation sections
-def generate_documentation_section(document_name, section_name, context, section_template):
-    # Fill in the template with specific details
+def generate_section_prompt(document_name, section_name, context, section_template):
     prompt = SECTION_PROMPT_SYSTEM_MESSAGE.format(
         document_name=document_name,
         section_name=section_name,
         context=context,
         section_template=section_template
     )
-    
-    # Use the prompt to guide the documentation generation process
-    # This would involve using the tools mentioned in the prompt to gather information
-    # and then writing the section based on the gathered data and instructions
+    return prompt
 
-# Example call to the function
-generate_documentation_section(
-    document_name="Project Design Document",
-    section_name="Architecture Overview",
-    context="Existing architecture details and design patterns.",
-    section_template="Provide a detailed overview of the system architecture, including diagrams and component descriptions."
+# Example usage in a documentation workflow:
+prompt = generate_section_prompt(
+    document_name="API Reference",
+    section_name="Authentication Methods",
+    context="Previous section covers system overview.",
+    section_template="Describe all authentication mechanisms with code examples and security notes."
 )
+# This prompt would then be sent to the LLM or documentation agent.
 ```
 
-In this example, the `generate_documentation_section` function uses the `SECTION_PROMPT_SYSTEM_MESSAGE` to create a structured prompt for generating a specific section of a design document. The function would then proceed to use the available tools to gather information and generate the documentation accordingly.
+## Summary
+
+- **Defines:** A system message prompt for AI documentation generation
+- **Purpose:** Guides AI to create comprehensive design document sections based on repository exploration
+- **Used by:** Documentation generation workflows/modules that interact with AI systems
+- **Contains:** One formatted template string with placeholders and detailed instructions
+
+This file is central to ensuring accurate and thorough technical documentation is produced by aligning the AI's process with best practices and providing explicit tools for repository analysis.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: b271ac2401e94a1d5c37ecce534dedefdd19619f531c7513bdc885ec8cc7848d
-relative_path: src\prompts\section_prompt_system_message.py
-generation_date: 2025-06-10T20:43:07.135376
+relative_path: src/prompts/section_prompt_system_message.py
+generation_date: 2025-06-30T00:11:42.536699
 ```
 <!-- END GENERATION METADATA -->

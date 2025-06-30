@@ -40,7 +40,14 @@ class CodeAnalyzer:
     
     def _should_include_file(self, file_path: Path, supported_extensions: List[str], exclude_patterns: List[str]) -> bool:
         """Check if a file should be included in documentation generation."""
-        if not file_path.is_file():
+        try:
+            # See if the file is acecssible first
+            if not file_path.exists():
+                return False
+            
+            if not file_path.is_file():
+                return False
+        except OSError:
             return False
         
         # Check file extension

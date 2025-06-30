@@ -2,162 +2,148 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\context_manager.py
+# Documentation for src/context_manager.py
 
-# src/context_manager.py
+# `context_manager.py`
 
 ## Purpose
-`ContextManager` centralizes the logic for assembling, summarizing, and enhancing documentation context within a pipeline. It enables:
-- Loading an existing documentation guide (if any) into the current documentation context.
-- Summarizing large documentation blobs via an LLM, with chunking and error-fallback.
-- Formatting and merging a generated documentation guide (`DocumentationGuide`) into existing docs.
-- Providing a unified interface for downstream steps that generate design documents or further process docs.
+
+`context_manager.py` encapsulates all logic related to managing the documentation context within a documentation generation pipeline. Its primary roles are to:
+- Load, summarize, and enhance documentation context.
+- Integrate a documentation guide (if available or requested).
+- Interface with LLMs (Large Language Models) to summarize large documentation.
+- Prepare context to facilitate context-aware documentation and design document generation.
+
+This manager provides utility methods to ensure that context passed into later pipeline stages is accurate, relevant, and within processing limits.
 
 ---
 
 ## Functionality
 
-### `__init__(self, config, doc_processor, llm)`
-Constructor.  
-- **config**: global or pipeline-level settings.  
-- **doc_processor**: component with methods  
-  - `create_chunks(text: str) -> List[str]`  
-  - `count_tokens(text: str) -> int`  
-- **llm**: language-model client exposing an `invoke(messages)` method.  
-- **logger**: module-level logger for info/debug/error messages.
+The core of the file is the `ContextManager` class. It serves as a mediator between:
+- The current set of documentation/context.
+- The documentation guide (potentially generated during documentation generation).
+- The large language model (for summarization).
 
-### `load_documentation_guide(self, state: PipelineState) -> Dict[str, Any]`
-Checks whether a documentation guide exists on disk and, if found, reads it and appends it to the `state.existing_docs` context.  
-- If `state.request.guide` is `False` but `design_docs` are requested, it still attempts to load a guide from `output_path/documentation_guide.md`.  
-- On success, returns `{"existing_docs": DocumentationContext(...)}` with updated content, token count, and original docs list.  
-- On failure or absence, returns an empty dict.
+### Main Methods
 
-### `summarize_docs(self, state: PipelineState) -> Dict[str, Any]`
-Breaks `state.existing_docs.content` into chunks, submits each chunk to the LLM for summarization using a predefined `ChatPromptTemplate`, and stitches the chunk‐summaries back together.  
-- Preserves terminology, architecture decisions, implementation details, and dependencies.  
-- Implements per-chunk error handling: on exception, logs the error, falls back to truncated chunk text, and counts failures.  
-- Returns `{"existing_docs": DocumentationContext(...)}` with `summarized=True` and updated token counts.
+- **`__init__(self, config, doc_processor, llm)`**:  
+  Initializes the context manager with configuration, document processor, and LLM handler.
 
-### `format_guide_for_context(self, guide: DocumentationGuide) -> str`
-Transforms a populated `DocumentationGuide` object into a markdown string block suitable for appending to existing contexts.  
-- Includes metadata (`generation_date`, `total_files`) and iterates each `guide.entries` to list file paths and their summaries.
+- **`load_documentation_guide(self, state: PipelineState) -> Dict[str, Any]`**:  
+  Loads a documentation guide file (if present and relevant), merges its contents into the existing documentation context, and returns the enhanced context.
 
-### `enhance_context_with_guide(self, state: PipelineState, guide: DocumentationGuide) -> DocumentationContext`
-If the provided `guide` has entries, merges the formatted guide content into `state.existing_docs.content` and returns a new `DocumentationContext`. Otherwise, returns the unmodified `state.existing_docs`.
+- **`summarize_docs(self, state: PipelineState) -> Dict[str, Any]`**:  
+  Segments existing documentation into manageable chunks, uses the LLM to summarize each chunk, handles errors, and composes a summarized context.
 
-### `load_existing_guide_from_file(self, state: PipelineState) -> str`
-Reads the file `output_path/documentation_guide.md` (if it exists) and returns its content as a string. On error or absence, returns an empty string.
+- **`format_guide_for_context(self, guide: DocumentationGuide) -> str`**:  
+  Formats a `DocumentationGuide` object into a markdown string suitable for injecting into context.
+
+- **`enhance_context_with_guide(self, state: PipelineState, guide: DocumentationGuide) -> DocumentationContext`**:  
+  Produces a new documentation context with the `guide` content appended.
+
+- **`load_existing_guide_from_file(self, state: PipelineState) -> str`**:  
+  Loads the raw text from a documentation guide markdown file, if present.
 
 ---
 
 ## Key Components
 
-- **ContextManager**  
-  Orchestrates reading, summarizing, and enriching documentation contexts.
-- **PipelineState** (`.models`)  
-  Carries request parameters, existing docs, and other pipeline metadata.
-- **DocumentationContext** (`.models`)  
-  Data class encapsulating:
-  - `content: str`  
-  - `token_count: int`  
-  - `summarized: bool`  
-  - `original_docs: List[str]`
-- **DocumentationGuide** (`.models`)  
-  Represents a generated guide, with fields:
-  - `generation_date: str`  
-  - `total_files: int`  
-  - `entries: List[Entry]` (each with `original_file_path`, `doc_file_path`, `summary`)
-- **doc_processor**  
-  - `count_tokens(text: str) -> int`  
-  - `create_chunks(text: str) -> List[str]`
-- **llm**  
-  Language-model client with `invoke(messages: List[Message]) -> Response`.
+### Classes
+
+- **`ContextManager`**:  
+  The central class orchestrating context, summarization, and guide integration.
+
+### Methods
+
+- `load_documentation_guide`
+- `summarize_docs`
+- `format_guide_for_context`
+- `enhance_context_with_guide`
+- `load_existing_guide_from_file`
+
+### Objects & Variables
+
+- **`config`**: Configuration dictionary/object for context handling logic.
+- **`doc_processor`**: Responsible for token counting and chunking documentation (supports `count_tokens` and `create_chunks`).
+- **`llm`**: An LLM interface supporting an `invoke()` method to get summaries from model.
+
+### Imported Utilities
+
+- **System/Human Message & ChatPromptTemplate** (from `langchain_core`): Used for prompt engineering LLM input.
+- **`SUMMARIZE_DOCS_SYSTEM_MESSAGE`**: The system prompt (injected for instructing LLM).
+- **Model Types**: `PipelineState`, `DocumentationContext`, `DocumentationGuide` are critical for passing/structuring context through the pipeline.
 
 ---
 
 ## Dependencies
 
-External:
-- `logging` (std lib)
-- `typing`: `Dict`, `Any`, `List`
-- `langchain_core.messages`: `HumanMessage`, `SystemMessage`
-- `langchain_core.prompts`: `ChatPromptTemplate`
+### External
 
-Internal:
-- `.models`: `PipelineState`, `DocumentationContext`, `DocumentationGuide`
+- **langchain_core**: Usage of `HumanMessage`, `SystemMessage`, `ChatPromptTemplate`.
+- **logging**: For status and error tracking.
 
-Downstream:
-- Pipeline orchestrators that generate design docs or final outputs rely on `ContextManager` to prepare `existing_docs` for next steps.
+### Internal
+
+- `.prompts.summarize_docs_system_message`: The system prompt for summarizing docs.
+- `.models`: Definitions for state and context data objects.
+
+### Other
+
+- Relies on passed-in `doc_processor` and `llm` for custom chunking/token logic and LLM invocation.
+
+#### What depends on this file:
+- Any higher-level pipelines or orchestration scripts responsible for generating, enhancing, or using documentation context. Other pipeline stages will likely rely on the outputs of this manager for context-aware documentation generation.
 
 ---
 
 ## Usage Examples
 
+Below are typical usage scenarios for this context manager, assuming appropriate setup:
+
 ```python
-from pathlib import Path
-import logging
-
 from src.context_manager import ContextManager
-from src.models import PipelineState, DocumentationContext, DocumentationGuide
-from my_project.doc_processor import DocProcessor
-from my_project.llm_client import LLMClient
+from src.models import PipelineState
 
-# 1. Initialize components
-config = {"max_tokens": 2000}
-doc_processor = DocProcessor()
-llm = LLMClient(model="gpt-4")
-ctx_manager = ContextManager(config, doc_processor, llm)
+# Set up prerequisites
+config = {...}
+doc_processor = ...  # should provide create_chunks, count_tokens
+llm = ...            # should provide an invoke() method
 
-# 2. Prepare pipeline state
-state = PipelineState(
-    request=SomeRequest(
-        output_path=Path("./output"),
-        guide=False,
-        design_docs=True
-    ),
-    existing_docs=DocumentationContext(
-        content="Long existing documentation...",
-        token_count=15000,
-        summarized=False,
-        original_docs=["initial docs..."]
-    )
-)
+context_manager = ContextManager(config, doc_processor, llm)
 
-# 3. Load an existing guide if present
-result = ctx_manager.load_documentation_guide(state)
-if "existing_docs" in result:
-    state.existing_docs = result["existing_docs"]
+# 1. Load or inject a documentation guide
+state = PipelineState(...)  # setup with initial state
+context_updates = context_manager.load_documentation_guide(state)
+if context_updates:
+    state.existing_docs = context_updates['existing_docs']
 
-# 4. Summarize if too large
-if state.existing_docs.token_count > config["max_tokens"]:
-    result = ctx_manager.summarize_docs(state)
-    state.existing_docs = result["existing_docs"]
+# 2. Summarize documentation if needed
+context_updates = context_manager.summarize_docs(state)
+state.existing_docs = context_updates['existing_docs']
 
-# 5. At design-doc generation time, merge a freshly generated guide
-generated_guide = DocumentationGuide(
-    generation_date="2024-07-01",
-    total_files=5,
-    entries=[
-        Entry("/src/a.py", "/docs/a.md", "Summary of a.py"),
-        # ...
-    ]
-)
-state.existing_docs = ctx_manager.enhance_context_with_guide(
-    state, generated_guide
-)
+# 3. Format a guide for context (for LLM injection or context enhancement)
+guide_md = context_manager.format_guide_for_context(documentation_guide)
 
-# 6. Now pass state.existing_docs.content to your design doc generator
-print("Final context:", state.existing_docs.content)
+# 4. Enhance current context with guide
+new_context = context_manager.enhance_context_with_guide(state, documentation_guide)
+
+# 5. Load a guide file directly (as plain string)
+guide_str = context_manager.load_existing_guide_from_file(state)
 ```
 
-This workflow ensures that your documentation pipeline can incrementally load, summarize, and enrich context for downstream processing without manual file I/O.
+---
+
+## Summary
+
+`context_manager.py` is a foundational component in the documentation pipeline, ensuring that context and guides are appropriately managed, summarized, and made LLM-ready. It abstracts away the complexities of merging, summarizing, and enhancing context for downstream generative documentation processes.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: db8eada057d6b2cab8857bad6b8b10b4ca7f7d6403bb3983e178a4f9f6b263eb
-relative_path: src\context_manager.py
-generation_date: 2025-06-10T22:37:46.905782
+file_hash: ee075ebb0c4b630feaa32f4d17a3f2bb1a819e427a23985bec24165776d3cc0a
+relative_path: src/context_manager.py
+generation_date: 2025-06-30T00:05:10.548739
 ```
 <!-- END GENERATION METADATA -->

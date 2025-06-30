@@ -2,161 +2,137 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src\report_generator.py
+# Documentation for src/report_generator.py
 
-# src/report_generator.py Documentation
+# `report_generator.py`
 
 ## Purpose
-The `ReportGenerator` class encapsulates all logic for finalizing and reporting the results of a documentation‐generation pipeline. It handles:
-- Creating output directories
-- Saving individual file documentation (if incremental saving is disabled)
-- Generating a human‐readable summary report (`documentation_report.md`)
-- Printing CLI status updates
-- Reporting on design documentation (if enabled)
 
-This module exists to centralize post‐processing and reporting responsibilities so that the pipeline core can remain focused on content generation.
+The `report_generator.py` file provides the main reporting logic for a documentation generation pipeline. It is responsible for saving results, generating human-readable summary reports, and reporting the status of both file-level and design-level documentation generation.
+
+This component acts as a central place to finalize output, summarize successes and failures, and provide actionable feedback at the end of a pipeline run. It helps users, developers, and maintainers understand what has been produced, what failed, and where further attention may be needed.
 
 ---
 
 ## Functionality
 
-### Class: ReportGenerator
-#### `__init__(self, config)`
-- **Purpose**: Initialize the report generator.
-- **Parameters**:
-  - `config` (any): Global configuration object providing sections such as `design_docs` and `processing`.
+The core class, `ReportGenerator`, orchestrates:
+- Saving documentation results to output directories.
+- Handling both incremental and non-incremental saving modes.
+- Generating detailed Markdown summary reports, including stats and breakdowns.
+- Detailed reporting for a "design documentation" subsystem, which may feature multiple document types and sections per type.
 
-Sets up:
-- `self.config`: Reference to the configuration.
-- `self.logger`: A `logging.Logger` for debug/info messages.
+### Main Methods
+
+#### `__init__(self, config)`
+Initializes the report generator with a given configuration. The configuration (`config`) is expected to have at least a `.design_docs` attribute among other settings.
 
 #### `save_results(self, state: PipelineState, file_processor) -> dict`
-- **Purpose**: Finalize the documentation run by:
-  1. Creating the output folder structure.
-  2. Optionally saving each file’s documentation if incremental saving is off.
-  3. Generating the summary report file.
-  4. Printing a summary of successes and failures.
-  5. Reporting on design documentation (if present).
-- **Parameters**:
-  - `state` (`PipelineState`): Holds `results`, `request`, and optional `design_documentation_state`.
-  - `file_processor` (object): Must implement `save_single_result(state, result)` to save individual docs.
-- **Returns**: `{"completed": True}` upon completion.
+- Finalizes the documentation run.
+- Ensures output directories exist and saves non-incremental results if required.
+- Calls other methods to generate the summary report and report on design documentation status.
+- Prints summary statistics.
+- Returns a dictionary indicating completion.
 
 #### `report_design_documentation_status(self, state: PipelineState)`
-- **Purpose**: Print a breakdown of design‐doc generation status to the console.
-- **Parameters**:
-  - `state` (`PipelineState`): Must include `design_documentation_state` with a list of generated docs and sections.
-- **Behavior**:
-  - Prints configured vs. enabled/disabled document types.
-  - Summarizes successes/failures at both document and section levels.
-  - Lists individual errors for failed docs.
+- Reports progress and results for all configured design document types and their sections.
+- Lists successful and failed documents.
+- Prints aggregate statistics.
 
 #### `generate_summary_report(self, state: PipelineState)`
-- **Purpose**: Create a Markdown report (`documentation_report.md`) summarizing:
-  - Total files processed
-  - Successfully documented files
-  - Skipped files (no changes)
-  - Failed files and their error messages
-  - Design‐doc summary (delegates to `generate_design_docs_report_section`)
-  - Existing documentation context (if any)
-  - Processing configuration details
-- **Parameters**:
-  - `state` (`PipelineState`): Must include `results`, `request`, optional `existing_docs`, optional `design_documentation_state`.
-- **Behavior**:
-  - Builds a multi‐section Markdown string.
-  - Writes it to `state.request.output_path / "documentation_report.md"`.
-  - Prints confirmation to console.
+- Gathers summary data about the documentation generation (successes, skips, failures, configuration information, and existing docs context).
+- Assembles a Markdown report and writes it to `documentation_report.md` in the output directory.
+- Appends the design docs summary via `generate_design_docs_report_section()` if any.
 
 #### `generate_design_docs_report_section(self, state: PipelineState) -> str`
-- **Purpose**: Produce the "Design Documentation" subsection for the summary report.
-- **Parameters**:
-  - `state` (`PipelineState`): Includes `design_documentation_state`.
-- **Returns**: A Markdown‐formatted string reporting:
-  - Configured/enabled/disabled doc types
-  - Counts of successes/failures
-  - Lists of disabled types, successful docs (with section counts and file paths), and failed docs (with errors and section‐level errors)
-  - Aggregate section statistics
+- Returns a Markdown string summarizing the outcomes for design documentation, breaking down by doc type, sections, and error info.
 
 ---
 
 ## Key Components
 
-- **ReportGenerator**: Central class orchestrating final reporting.
-- **PipelineState** (imported from `.models`):  
-  - `request`: Contains `output_path` (Path), `repo_path`, `config`, `design_docs`, `file_docs`, `guide`.
-  - `results`: List of file‐level result objects with attributes `file_path`, `success`, `documentation`, and `error_message`.
-  - `design_documentation_state` (optional): Holds `documents`, each having `name`, `success`, `error_message`, `sections`, and optional `file_path`.
-  - `existing_docs` (optional): Contains `content`, `token_count`, `summarized`, and `original_docs`.
-- **file_processor**: External component expected to provide `save_single_result(state, result)`.
+### Classes
+
+- **`ReportGenerator`**: Main orchestrator for report generation.
+- **PipelineState**: Imported from `.models`. Supplies pipeline and documentation state, including results, configuration, paths, and design doc statuses.
+
+### Methods
+
+See above for methods in `ReportGenerator`.
+
+### Variables
+
+- `self.config`: Pipeline configuration object.
+- `self.logger`: Logger for the report generator.
+- `state`: Passed PipelineState instance holding the context of the documentation run.
+- `file_processor`: External object responsible for file result persistence when incremental saving is disabled.
 
 ---
 
 ## Dependencies
 
-- Python Standard Library:
-  - `logging`: For internal logging (though currently print statements are used).
-  - `pathlib.Path`: For filesystem path operations.
-- Internal Modules:
-  - `.models.PipelineState`: Defines the data structures passed into report methods.
-- External Runtime:
-  - The pipeline orchestrator that provides the `PipelineState` and `file_processor`.
-  - A well‐formed `config` object with keys:
-    - `design_docs` → `{"documents": {...}}`
-    - `processing` → e.g. `{"save_incrementally": bool, "max_files": int}`
+### Internal
 
-**What depends on this file?**  
-Typically, the pipeline’s finalization step. Any upstream code that completes documentation generation will call `ReportGenerator.save_results(...)` to persist and report outcomes.
+- `.models.PipelineState`: The full state of the documentation pipeline, including results, requests, design documentation state, and existing documentation context.
+
+### External
+
+- `logging`: For logging (mainly logger initialization; print is used for user output).
+- `pathlib.Path`: For directory and file path manipulations.
+
+### What Depends on This Module
+
+- Components responsible for running the documentation pipeline will instantiate and use `ReportGenerator` to produce summary output and reporting at the end of execution.
 
 ---
 
-## Usage Example
+## Usage Examples
+
+### Example: Finalizing a Documentation Pipeline
+
+Assume `state` is a `PipelineState` holding the results, and `file_processor` is an object with a `.save_single_result()` method:
 
 ```python
-from pathlib import Path
-from src.report_generator import ReportGenerator
-from src.models import PipelineState
-from src.file_processor import FileProcessor  # hypothetical
+from report_generator import ReportGenerator
 
-# 1. Load or build your global config
 config = {
-    "processing": {"save_incrementally": False, "max_files": None},
-    "design_docs": {
-        "documents": {
-            "architecture": {"enabled": True},
-            "api_reference": {"enabled": False},
-        }
-    },
+    # ... your config here ...
 }
+generator = ReportGenerator(config)
+completion_info = generator.save_results(state, file_processor)
 
-# 2. Instantiate the report generator
-reporter = ReportGenerator(config)
-
-# 3. After running the pipeline, assemble a PipelineState
-state = PipelineState(
-    request=your_request_object,       # must include output_path, repo_path, etc.
-    results=your_file_results_list,    # list of file‐level result objects
-    design_documentation_state=your_design_state,  # optional
-    existing_docs=your_existing_docs   # optional
-)
-
-# 4. Optionally create a file_processor with save_single_result()
-file_processor = FileProcessor()
-
-# 5. Finalize and write reports
-result = reporter.save_results(state, file_processor)
-assert result["completed"] is True
+# The summary report will be written to state.request.output_path/documentation_report.md
+# Console will output stats and status
 ```
+
+### Example: Accessing Detailed Reporting (within the pipeline)
+
+You can call:
+```python
+generator.report_design_documentation_status(state)
+```
+to print out status messages for only the design documentation results.
 
 ---
 
-_End of Documentation_
+## Notes
+
+- The report files and directories created are determined by `state.request.output_path` and other fields of the pipeline state/request.
+- Configuration expects fields such as `design_docs`, `processing` (with keys like `save_incrementally`, `max_files`), and more.
+- The file processor is only used when incremental saving is turned off (`save_incrementally=False`).
+
+---
+
+## Summary
+
+The `report_generator.py` module serves as the completion and reporting engine for a documentation generation pipeline. It ensures that results are saved, users are informed of successes and failures, and that summary information is both machine- and human-readable for ongoing maintenance and improvement efforts.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: c04fe5bc868ce4b0b7a060ff64e8c329ac722af1948b4f8c009c6b7ac57dc2ce
-relative_path: src\report_generator.py
-generation_date: 2025-06-10T22:39:31.544247
+relative_path: src/report_generator.py
+generation_date: 2025-06-30T00:12:29.339887
 ```
 <!-- END GENERATION METADATA -->

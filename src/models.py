@@ -12,7 +12,7 @@ class PipelineConfig(BaseModel):
     file_processing: Dict[str, Any] = Field(default_factory=dict)
     processing: Dict[str, Any] = Field(default_factory=dict)
     output: Dict[str, Any] = Field(default_factory=dict)
-    templates: Dict[str, str] = Field(default_factory=dict)
+    templates: Dict[str, Any] = Field(default_factory=dict)
     design_docs: Dict[str, Any] = Field(default_factory=dict)  
 
 
@@ -26,6 +26,7 @@ class DocumentationRequest(BaseModel):
     file_docs: bool = False
     design_docs: bool = False
     guide: bool = False
+    force_full_guide: bool = False
 
 
 class CodeFile(BaseModel):
@@ -103,6 +104,33 @@ class DesignDocumentationState(BaseModel):
     accumulated_context: str = ""  # Context from previously generated documents
     completed: bool = False
     
+class FileMetadata(BaseModel):
+    """Tracks metadata for a single file in incremental guide generation."""
+    
+    source_file_path: str  # Relative path to source file
+    source_file_modified: float  # Source file modification timestamp
+    doc_file_path: str  # Relative path to documentation file
+    doc_generated: float  # Documentation generation timestamp
+    doc_file_hash: str  # Content hash for change detection
+    guide_entry_generated: float  # When guide entry was last generated
+    guide_entry_hash: str  # Hash of current guide entry content
+
+class GuideMetadata(BaseModel):
+    """Tracks overall guide state for incremental updates."""
+    
+    guide_last_generated: float
+    guide_version: int = 1
+    tracked_files: Dict[str, FileMetadata] = Field(default_factory=dict)  # keyed by relative source path
+    guide_structure_hash: str = ""  # to detect template changes
+
+class ChangeSet(BaseModel):
+    """Represents detected changes for incremental guide generation."""
+    
+    new_files: List[str] = Field(default_factory=list)  # New source files
+    modified_files: List[str] = Field(default_factory=list)  # Modified source files
+    deleted_files: List[str] = Field(default_factory=list)  # Deleted source files
+    force_full_rebuild: bool = False  # Force complete guide regeneration
+
 class PipelineState(BaseModel):
     """State model for the LangGraph pipeline."""
 
@@ -114,4 +142,4 @@ class PipelineState(BaseModel):
     completed: bool = False
     documentation_guide: Optional[DocumentationGuide] = None
     design_documentation_state: Optional[DesignDocumentationState] = None
-    documentation_guide: Optional[DocumentationGuide] = None
+    guide_change_set: Optional[ChangeSet] = None  # For incremental guide updates
