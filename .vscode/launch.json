@@ -29,7 +29,6 @@
         "--docs-path", "H:\\repos\\therapy-link\\docs",
         "--file-docs",
         "--guide",
-        "--force-full-guide",
         "--verbose"
       ],
       "console": "integratedTerminal",

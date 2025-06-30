@@ -508,17 +508,38 @@ Please synthesize this information to provide a comprehensive understanding of t
             if state.error_occurred:
                 return {}  # Error already set
             
-            raw_response = getattr(state, 'raw_synthesis_response', {})
+            # Access raw_synthesis_response from the state
+            if hasattr(state, 'raw_synthesis_response'):
+                raw_response = state.raw_synthesis_response
+            else:
+                raw_response = {}
+            
+            # Debug logging
+            debug_log_path = Path("/tmp/mcp_debug.log")
+            with open(debug_log_path, "a") as f:
+                f.write(f"format_feature_results_node: "
+                        f"raw_response = {raw_response}\n")
+                has_attr = hasattr(state, 'raw_synthesis_response')
+                f.write(f"format_feature_results_node: "
+                        f"state has raw_synthesis_response = {has_attr}\n")
             
             response = MCPFeatureResponse(
-                feature_description=raw_response.get('feature_description', state.user_query),
-                comprehensive_answer=raw_response.get('comprehensive_answer', ''),
+                feature_description=raw_response.get(
+                    'feature_description', state.user_query),
+                comprehensive_answer=raw_response.get(
+                    'comprehensive_answer', ''),
                 key_components=raw_response.get('key_components', []),
-                implementation_details=raw_response.get('implementation_details', ''),
+                implementation_details=raw_response.get(
+                    'implementation_details', ''),
                 usage_examples=raw_response.get('usage_examples', ''),
                 related_concepts=raw_response.get('related_concepts', []),
-                source_documentation_files=raw_response.get('source_documentation_files', [])
+                source_documentation_files=raw_response.get(
+                    'source_documentation_files', [])
             )
+            
+            with open(debug_log_path, "a") as f:
+                f.write(f"format_feature_results_node: "
+                        f"created response = {response.dict()}\n")
             
             return {
                 "feature_understanding_result": response

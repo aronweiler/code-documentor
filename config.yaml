@@ -55,6 +55,7 @@ file_processing:
     - "__init__.py"
     - "package-lock.json"
     - "alembic"
+    - "guide_metadata.json"
 
 # Output Configuration
 output:
