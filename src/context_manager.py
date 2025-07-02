@@ -5,7 +5,7 @@ from langchain_core.prompts import ChatPromptTemplate
 
 from .prompts.summarize_docs_system_message import SUMMARIZE_DOCS_SYSTEM_MESSAGE
 
-from .models import PipelineState, DocumentationContext, DocumentationGuide
+from .models import PipelineConfig, PipelineState, DocumentationContext, DocumentationGuide
 
 
 class ContextManager:
@@ -96,9 +96,7 @@ class ContextManager:
 
         summarization_prompt = ChatPromptTemplate.from_messages(
             [
-                SystemMessage(
-                    content=SUMMARIZE_DOCS_SYSTEM_MESSAGE
-                ),
+                SystemMessage(content=SUMMARIZE_DOCS_SYSTEM_MESSAGE),
                 HumanMessage(content="Summarize this documentation:\n\n{chunk}"),
             ]
         )
@@ -109,8 +107,11 @@ class ContextManager:
         for i, chunk in enumerate(chunks):
             try:
                 self.logger.debug(f"Summarizing chunk {i+1}/{len(chunks)}")
-                messages = summarization_prompt.format_messages(chunk=chunk)
-                response = self.llm.invoke(messages)
+                messages = summarization_prompt.format_messages(chunk=chunk)                
+                response = self.llm.invoke(
+                    messages,
+                    config={"recursion_limit": self.config.model.get("recursion_limit", 50)},
+                )
 
                 # Handle different response types
                 if hasattr(response, "content"):

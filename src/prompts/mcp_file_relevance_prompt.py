@@ -53,17 +53,23 @@ BAD (DOCUMENTATION listed in the guide):
 Remember: Users want to find the actual CODE files to work with, not documentation about those files."""
 
 
-MCP_FEATURE_DISCOVERY_SYSTEM_PROMPT = """You are an expert documentation analyst. Your task is to analyze a documentation guide and identify which documentation files contain information about a specific feature.
+MCP_FEATURE_DISCOVERY_SYSTEM_PROMPT = """You are an expert documentation analyst. Your task is to analyze a documentation guide and identify which DOCUMENTATION files contain information about a specific feature.
 
 CRITICAL INSTRUCTIONS:
-1. You must identify DOCUMENTATION files (not source code files)
-2. Look for files in documentation_output/ directories
-3. Focus on .md files that contain feature documentation
-4. Return relative paths to documentation files from the repository root
-5. Do NOT return source code files (.py, .js, etc.)
+1. You MUST ONLY return DOCUMENTATION files (.md files) from documentation_output/ directories
+2. DO NOT return any source code files (.py, .js, .ts, .java, etc.)
+3. Look for file paths that contain "_documentation.md" in their name
+4. All paths must start with "documentation_output/"
+5. Focus on files that are relevant to the user's feature request
+
+The documentation guide shows files like this format:
+### source_file.py
+**Documentation:** `path/to/source_file_documentation.md`
+
+You need to extract the documentation paths (the .md files), NOT the source file names.
 
 INPUT FORMAT:
-- Documentation guide content that lists and describes documentation files
+- Documentation guide content that lists source files and their corresponding documentation
 - Feature description from user
 
 OUTPUT FORMAT:
@@ -71,24 +77,24 @@ Return a JSON object with this exact structure:
 {
   "feature_description": "The user's original feature request",
   "relevant_documentation_files": [
-    "documentation_output/src/feature_module_documentation.md",
-    "documentation_output/design_documentation/architecture.md"
+    "documentation_output/backend/app/models/drive_time_request_documentation.md",
+    "documentation_output/backend/app/services/drive_time_request_documentation.md"
   ],
   "discovery_reasoning": "Explanation of why these documentation files are relevant"
 }
 
-EXAMPLES OF GOOD DOCUMENTATION FILE PATHS:
-- documentation_output/src/user_auth_documentation.md
+EXAMPLES OF CORRECT DOCUMENTATION FILE PATHS:
+- documentation_output/backend/app/models/user_auth_documentation.md
+- documentation_output/frontend/src/components/workflow_documentation.md
 - documentation_output/design_documentation/architecture.md
-- documentation_output/src/workflow_engine_documentation.md
-- documentation_output/documentation_guide.md
+- documentation_output/src/api/endpoints_documentation.md
 
-EXAMPLES OF BAD PATHS (DO NOT INCLUDE):
-- src/user_auth.py (source code)
-- lib/workflow.js (source code)
-- README.md (not in documentation_output)
+EXAMPLES OF INCORRECT PATHS (DO NOT INCLUDE):
+- backend/app/models/user_auth.py (source code file)
+- src/components/workflow.js (source code file)
+- user_auth_documentation.md (missing documentation_output/ prefix)
 
-Remember: Users want to understand features through the GENERATED DOCUMENTATION files, not the original source code."""
+Remember: You are analyzing a guide that shows source files and their documentation. Extract only the documentation file paths."""
 
 
 MCP_FEATURE_SYNTHESIS_SYSTEM_PROMPT = """You are an expert technical documentation assistant. Your task is to synthesize information from multiple documentation files to provide a comprehensive understanding of a specific feature.

@@ -207,7 +207,7 @@ class DocumentationPipeline:
             return {"completed": True}
 
         print("Generating documentation guide...")
-        
+
         # Check if full regeneration is forced
         if state.request.force_full_guide:
             print("Full guide regeneration forced by command-line option...")
@@ -215,14 +215,20 @@ class DocumentationPipeline:
         else:
             # Detect changes for incremental generation
             changeset = self.guide_generator.detect_guide_changes(state)
-            
+
             # Use incremental generation if changes are detected
-            if changeset.new_files or changeset.modified_files or changeset.deleted_files:
+            if (
+                changeset.new_files
+                or changeset.modified_files
+                or changeset.deleted_files
+            ):
                 if changeset.force_full_rebuild:
                     print("Full guide rebuild required...")
                     guide = self.guide_generator.generate_documentation_guide(state)
                 else:
-                    print(f"Incremental guide update: {len(changeset.new_files)} new, {len(changeset.modified_files)} modified, {len(changeset.deleted_files)} deleted files")
+                    print(
+                        f"Incremental guide update: {len(changeset.new_files)} new, {len(changeset.modified_files)} modified, {len(changeset.deleted_files)} deleted files"
+                    )
                     guide = self.guide_generator.generate_incremental_guide(state)
             else:
                 print("No changes detected, guide is up to date")
@@ -231,7 +237,7 @@ class DocumentationPipeline:
                 if not guide:
                     # Fallback to generation if no existing guide
                     guide = self.guide_generator.generate_documentation_guide(state)
-        
+
         self.guide_generator.save_documentation_guide(state, guide)
 
         # Add guide to existing docs context for design document generation
@@ -329,7 +335,12 @@ class DocumentationPipeline:
             )
 
             messages = doc_prompt.format_messages()
-            response = self.llm.invoke(messages)
+            response = self.llm.invoke(
+                messages,
+                config={
+                    "recursion_limit": self.config.model.get("recursion_limit", 50)
+                },
+            )
 
             # Handle different response types
             if hasattr(response, "content"):

@@ -80,13 +80,13 @@ async def main():
         return [
             types.Tool(
                 name="get_relevant_files",
-                description="Find relevant files based on a natural language description of what you're looking for",
+                description="Find relevant source code files (.py, .js, .ts, etc.) based on a natural language description. Returns file paths with relevance scores and reasoning.",
                 inputSchema={
                     "type": "object",
                     "properties": {
                         "description": {
                             "type": "string",
-                            "description": "Plain English description of the files you need (e.g., 'files related to user authentication', 'implementation of workflow X')"
+                            "description": "Natural language description of what you're looking for. Examples: 'files that handle user authentication', 'code for processing payments', 'API endpoints for drive time requests', 'database models for workflows', 'frontend components for user management'"
                         }
                     },
                     "required": ["description"]
@@ -94,13 +94,13 @@ async def main():
             ),
             types.Tool(
                 name="understand_feature",
-                description="Get documentation and understanding of a specific feature or functionality",
+                description="Get comprehensive documentation and understanding of a specific feature. Analyzes multiple documentation files to provide detailed explanations, implementation details, usage examples, and related concepts.",
                 inputSchema={
                     "type": "object", 
                     "properties": {
                         "feature_description": {
                             "type": "string",
-                            "description": "Description of the feature you want to understand (e.g., 'AI workflow calculating drive time', 'user registration system')"
+                            "description": "Description of the feature or functionality you want to understand. Examples: 'drive time approval process', 'user authentication system', 'workflow automation engine', 'payment processing pipeline', 'AI-powered recommendation system'"
                         }
                     },
                     "required": ["feature_description"]
