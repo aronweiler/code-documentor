@@ -4,149 +4,137 @@
 
 # Documentation for .vscode\launch.json
 
-# `.vscode/launch.json` – VS Code Launch Configurations for Documentation Toolkit
+# `.vscode/launch.json` Documentation
 
 ## Purpose
 
-This file configures **Visual Studio Code (VS Code) debugging and run profiles** for automating tasks in the documentation generation toolkit (`main.py`). It enables one-click running and debugging of various documentation workflows—such as generating file-level docs, guides, design docs, performing cleanup, and validating configuration—directly within the VS Code IDE.
-
-This improves developer productivity by standardizing commands, eliminating the need for custom terminal commands, and ensuring consistent environments for different documentation scenarios.
+The `.vscode/launch.json` file configures Visual Studio Code's debugging environment for this project. It defines multiple debug configurations for running and testing project scripts, particularly those related to generating and validating documentation, as well as analyzing repositories. This allows developers to quickly launch common project scripts with specified parameters directly from the VS Code UI without re-typing command-line arguments.
 
 ---
 
 ## Functionality
 
-### What This File Does
+The file leverages VS Code's [Launch configuration](https://code.visualstudio.com/docs/editor/debugging#_launch-configurations) format to set up how scripts (here, Python scripts using `debugpy`) are executed for various documentation-related workflows. The functionalities encoded cover:
 
-- **Defines Launch Profiles:** Each entry in the `configurations` array is a named profile for running or debugging `main.py` with a specific set of arguments and environment variables.
-- **Supports Multiple Workflows:** Profiles are tailored for file documentation, design documentation, guide generation, repository cleanup, repository analysis, and configuration validation.
-- **Handles Platform-Specific Paths:** Some configurations (e.g., "for Therapy-Link") are set up for Windows and Linux environments.
-- **Ensures PYTHONPATH Set:** All profiles configure the environment variable `PYTHONPATH` to the workspace root to ensure Python module resolution.
+- Generating file-level documentation
+- Generating guides (presumably higher-level documentation)
+- Generating design documents
+- Running a comprehensive documentation generation workflow
+- Analyzing repositories
+- Validating the configuration of the documentation generation system
+
+Each configuration customizes arguments, working directories, and environment variables (notably the `PYTHONPATH`), and launches the main script (`main.py`) in the project root.
 
 ---
 
 ## Key Components
 
-- **`version`**: `"0.2.0"` — The VS Code launch configuration schema version.
-- **`configurations`**:  
-  An array of profiles, each including:
-  - `name`: Display name in the VS Code "Run and Debug" menu.
-  - `type`: Always `debugpy` (Python debugger).
-  - `request`: Always `launch` (start a new process).
-  - `program`: Main Python entry point—always `${workspaceFolder}/main.py`.
-  - `args`: Arguments passed to `main.py`, customized per task.
-  - `console`: Where output appears (`integratedTerminal` for standard terminal tab).
-  - `cwd`: Working directory (always `${workspaceFolder}`).
-  - `env`: Environment variables (`PYTHONPATH` set to workspace root).
+### 1. **Configurations**
+
+Each object under the `"configurations"` array defines a launch scenario, with keys:
+
+- **name**: Display name in VS Code's debug panel.
+- **type**: Always `"debugpy"` for Python debugging.
+- **request**: Always `"launch"`, indicating a launch (not an attach) type.
+- **program**: Always `"${workspaceFolder}/main.py"` – runs the main Python script at the root.
+- **args**: Arguments passed to `main.py` (see details below).
+- **console**: The VS Code console to use (here, always `"integratedTerminal"`).
+- **cwd**: Sets the current working directory (always the workspace root).
+- **env**: Sets environment variables (here, ensures `PYTHONPATH` includes the workspace root).
 
 #### Notable Configurations
 
-- **Generate File Documentation Only**:
-  - Runs `main.py generate --repo-path . --file-docs --verbose`
-- **Generate All Docs for Therapy-Link (Windows/Linux)**:
-  - Runs doc generation targeting the external repository at `H:\repos\therapy-link` (Windows) or `/mnt/h/repos/therapy-link` (Linux), including guides.
-- **Generate Design Docs**:
-  - Runs `main.py generate --repo-path . --design-docs --verbose`
-- **Generate Guide**:
-  - Runs `main.py generate --repo-path . --docs-path documentation_output --guide --verbose`
-- **Generate File Docs + Guide**:
-  - Runs file docs and guide generation together.
-- **Generate File Docs + Design Docs + Guide + Cleanup**:
-  - Runs all documentation tasks with `--cleanup` to remove orphaned files.
-- **Analyze Repository**:
-  - Runs analysis on a specified repository (`analyze` command).
-- **Validate Configuration**:
-  - Runs `validate-config` command to check project setup.
+- **Generate File Documentation Only**
+- **Generate/All Docs for Therapy-Link** (Windows and Linux variants)
+- **Generate Design Docs**
+- **Generate Guide**
+- **Generate File Docs + Guide**
+- **Generate File Docs + Design Docs + Guide**
+- **Analyze Repository**
+- **Validate Configuration**
+
+### 2. **Arguments Passed to `main.py`**
+
+Common arguments include:
+
+- **generate**: Command to generate documentation.
+- **--repo-path**: Path to the root of the repository to document.
+- **--file-docs**: Generate file-level documentation.
+- **--design-docs**: Generate design documentation.
+- **--guide**: Generate user or developer guides.
+- **--docs-path**: Destination directory for documentation output.
+- **--cleanup**: Clean up generated docs or intermediate files.
+- **--verbose**: Run with verbose output (for debugging/logging).
+- **analyze**: Run repository analysis.
+- **validate-config**: Validate the documentation configuration.
 
 ---
 
 ## Dependencies
 
-### Depends On
+### **Depends On**
 
-- **Python** with the [debugpy](https://github.com/microsoft/debugpy) extension (used by VS Code).
-- **`main.py`**: The toolkit's main command-line file, which must accept all the listed arguments.
-- Documentation generator's Python environment and project structure.
+- **debugpy**: Python debug adapter for VS Code.
+- **main.py**: The project’s main script, assumed to handle various documentation and analysis operations.
+- **Python interpreter**: The system Python used to run the scripts.
+- **Workspace directory structure**: Relies on the project structure (e.g., presence of `main.py`).
 
-### Depended On By
+### **Depended On By**
 
-- VS Code developers working in this repository who want convenient F5 (Run/Debug) tasks for documentation generation.
-- Any team process that standardizes or automates documentation tasks via VS Code integration.
+- **VS Code Debugger**: Uses this file to populate the Run and Debug UI.
+- **Developers**: Rely on these configurations for efficient development, troubleshooting, and documentation tasks.
 
 ---
 
 ## Usage Examples
 
-### Running a Launch Profile
+### **Selecting and Running a Launch Configuration**
 
-1. Open VS Code in your project folder.
-2. Go to the **Run and Debug** sidebar (`Ctrl+Shift+D`).
-3. Select a configuration (e.g., "Generate File Documentation Only") from the dropdown.
-4. Click the green "Run/Debug" button or press `F5`.
-5. Output and logs appear in the integrated terminal.
+1. Open the Run and Debug sidebar in VS Code (`Ctrl+Shift+D`).
+2. Choose a configuration (e.g., *"Generate File Documentation Only"*) from the dropdown menu.
+3. Press the green play (`Start Debugging`) button or `F5`.
+4. The selected configuration launches `main.py` with pre-specified arguments, using the integrated terminal.
 
-### Customizing for Your Repo
+### **Example Scenarios**
 
-Edit `--repo-path` or `--docs-path` as needed for your project's location, or duplicate and modify configurations for new workflows.
+#### **Generate File Documentation Only**
+- Runs: 
+  ```
+  python main.py generate --repo-path . --file-docs --verbose
+  ```
+- Use when you want to produce documentation for individual files in the current repository, with extra log output.
 
----
+#### **Analyze Repository**
+- Runs:
+  ```
+  python main.py analyze C:\repos\example-project
+  ```
+- Use to perform analysis (possibly static analysis or metrics) on a separate codebase.
 
-## Typical Workflow Calls
+#### **Generate All Docs for Therapy-Link (Linux)**
+- Runs:
+  ```
+  python main.py generate --repo-path /mnt/h/repos/therapy-link --docs-path /mnt/h/repos/therapy-link/docs --file-docs --guide --verbose
+  ```
+- Use to generate all documentation for the Therapy-Link repo on a Linux filesystem.
 
-- **Generate file documentation for current project:**
-  - `main.py generate --repo-path . --file-docs --verbose`
-- **Generate design docs:**
-  - `main.py generate --repo-path . --design-docs --verbose`
-- **Full guide generation:**
-  - `main.py generate --repo-path . --guide --docs-path documentation_output --verbose`
-- **Generate and cleanup docs:**
-  - `main.py generate --repo-path . --cleanup --docs-path docs --file-docs --design-docs --guide --verbose`
-- **Analyze another repository:**
-  - `main.py analyze C:\repos\example-project`
-- **Validate project configuration:**
-  - `main.py validate-config`
+...
 
----
-
-## Related Files & Extensions
-
-- `.vscode/tasks.json`: For shell-based commands (see project documentation).
-- VS Code Python extension (required for debugpy integration).
-
----
-
-## Summary Table
-
-| Name                                      | Main Purpose                          | Typical Arguments                                               |
-|--------------------------------------------|---------------------------------------|----------------------------------------------------------------|
-| Generate File Documentation Only           | File-level docs (source code)         | `generate --repo-path . --file-docs --verbose`                 |
-| Generate All Docs for Therapy-Link         | All docs for Windows repo             | Uses full paths with `--file-docs --guide`                     |
-| Generate All Docs for Therapy-Link (Linux) | All docs for Linux repo               | Uses Linux paths                                               |
-| Generate Design Docs                      | Design documentation only             | `generate --repo-path . --design-docs --verbose`               |
-| Generate Guide                            | Documentation guide                   | `generate --repo-path . --docs-path documentation_output --guide --verbose` |
-| Generate File Docs + Guide                 | File docs AND guide                   | `--file-docs --guide --verbose`                                |
-| Generate File Docs + Design Docs + Guide   | All, with cleanup and most options    | `--cleanup --file-docs --design-docs --guide --verbose`        |
-| Analyze Repository                        | Analyze (not generate) on target repo | `analyze C:\repos\example-project`                             |
-| Validate Configuration                    | Validate toolkit setup                | `validate-config`                                              |
+### **Customizing or Adding Configurations**
+- Add new objects to the `configurations` array with the desired arguments and settings to support new workflows or scripts.
 
 ---
 
-## Notes
+## Summary
 
-- If you add or change options in `main.py`'s CLI, update these configs!
-- Paths may need adjustment for different users/OSes.
-- For team use, ensure all developers use compatible VS Code plugins and `debugpy` environments.
-
----
-
-**For further workflow integration or batch scripting, see the `README.md` and project documentation for `.vscode/tasks.json` and CI/CD guidance.**
+This `.vscode/launch.json` streamlines common documentation and analysis workflows for the project by providing one-click or one-keystroke launch profiles in Visual Studio Code, heavily relying on the underlying `main.py` script and the Python `debugpy` debugger. It is central for development, automation, and QA tasks tied to documentation in the repository.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: 7117bfdfb50d2ad5faf785207235d93b45bd9fe6667d9c8dc5511213f838d4f3
+file_hash: 217d4d6564914c308a4d7f414baeb425b9dbef6ab488d1fabb2cea2a8ac1bd24
 relative_path: .vscode\launch.json
-generation_date: 2025-07-01T23:03:09.623754
+generation_date: 2025-07-01T23:28:30.281530
 ```
 <!-- END GENERATION METADATA -->

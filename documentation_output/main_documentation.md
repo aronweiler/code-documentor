@@ -8,197 +8,187 @@
 
 ## Purpose
 
-`main.py` is the **entry point** for the documentation generation toolkit in this project. Its primary purpose is to provide a command-line interface (CLI) for generating, analyzing, and cleaning up documentation for a source code repository. It orchestrates actions such as generating comprehensive documentation, cleaning orphaned documentation files, validating the configuration, and analyzing repository structure.
-
-This file ensures users can easily manage code documentation via simple terminal commands with flexible subcommands and arguments.
+This file is the **command-line entry point** for the documentation generation toolkit. It orchestrates the overall process of generating, cleaning, and managing technical documentation for code repositories. It handles argument parsing, command dispatch, and connects the appropriate pipeline components depending on user input.
 
 ---
 
 ## Functionality
 
-### Overview of Main Features
+`main.py` provides the following core command-line functionality:
 
-- **Documentation Generation**: Generate file-level, design, and/or documentation guide outputs for a repository.
-- **Cleanup Routine**: Remove orphaned documentation files corresponding to deleted source files (`--cleanup` feature).
-- **Repository Analysis**: Analyze the repository's source file structure (counts by extension/directory, largest files, etc.).
-- **Configuration Validation**: Check that configuration files (and API keys) are valid and that the environment is set up properly.
-- **Flexible CLI Interface**: Accepts both modern subcommand-style arguments and legacy direct arguments for compatibility.
+- **Documentation Generation** (`generate`): Invokes the main pipeline to create and update documentation for the target code repository, including file-level docs, design docs, and a documentation guide.
+- **Repository Analysis** (`analyze`): Analyzes the structure of a code repository (file counts, directories, extensions, largest files), optionally enforcing config-defined processing limits.
+- **Configuration Validation** (`validate-config`): Checks the documentation tool's configuration file and API key validity, ensuring dependencies and model access are correctly specified.
+- **Cleanup Orphaned Docs** (`--cleanup`): Deletes documentation files that have no corresponding source files, cleans empty directories, and updates or removes the documentation guide as appropriate.
 
-### Main Function
-
-#### `main()`
-
-- Detects how to parse arguments (subcommand mode vs. legacy mode).
-- Parses CLI arguments and dispatches to the appropriate action:
-    - `generate` &rarr; `run_documentation_generation()`
-    - `analyze` &rarr; `run_repository_analysis()`
-    - `validate-config` &rarr; `run_config_validation()`
-- Handles exceptions gracefully, including keyboard interrupts and errors with verbose traceback if requested.
-
-### Argument Parsers
-
-- **`create_subcommand_parser()`**:  
-  Builds a parser supporting explicit subcommands (`generate`, `analyze`, `validate-config`), each with its own arguments and help text.
-  
-- **`create_direct_parser()`**:  
-  Provides backward-compatible parsing for direct flags (shortcut for always running the `generate` command).
-
-- **`add_generate_arguments(parser)`**:  
-  Adds shared arguments for documentation generation (e.g., repo path, output path, various flags).
-
-### Documentation Pipeline
-
-#### `run_documentation_generation(args)`
-
-- Verifies input paths and argument combinations are valid.
-- Initializes the documentation pipeline (`DocumentationPipeline`) and triggers the documentation process as requested:
-    - Individual file documentation (`--file-docs`)
-    - Design documentation (`--design-docs`)
-    - Documentation guide (`--guide`)
-    - Cleanup orphaned documentation (`--cleanup`)
-- Outputs a summary of the result: how many files were generated, skipped, or failed.
-
-#### `run_cleanup(args)`
-
-- Implements the `--cleanup` feature:
-    - Scans source code files and maps expected documentation outputs.
-    - Identifies documentation files that no longer correspond to an existing source file.
-    - Removes orphaned documentation files and cleans up empty directories.
-    - Updates (or removes) the documentation guide as needed to reflect removed files.
-
-### Repository & Config Utilities
-
-#### `run_repository_analysis(args)`
-
-- Analyzes and outputs a summary of:
-    - Total files
-    - Count of files by extension and by directory
-    - Largest source files
-    - Whether the configured processing limit is met or exceeded
-
-#### `run_config_validation(args)`
-
-- Loads and validates the configuration file.
-- Checks API key connectivity and displays masked API key.
-- Reports on configuration items: file extensions, exclude patterns, model/provider, etc.
+The CLI supports both **subcommand-style** (`main.py generate ...`) and **direct-argument** (`main.py -r ...`) invocations for backward compatibility.
 
 ---
 
 ## Key Components
 
-| Component           | Description                                                                                 |
-|---------------------|--------------------------------------------------------------------------------------------|
-| **DocumentationPipeline** | Orchestrates the full documentation generation workflow. Imported from `src.pipeline`.    |
-| **ConfigManager**          | Loads and validates configuration files and model API keys. Imported from `src.config`.    |
-| **CodeAnalyzer**           | Scans the repository and analyzes the file structure. Imported from `src.code_analyzer`. |
-| **GuideGenerator, DocumentProcessor, LLMManager** | Used for documentation guide regeneration during cleanup.                       |
-| **argparse**               | Standard Python module for parsing CLI arguments.                                        |
+### Functions
+
+- **main**  
+  Main entry point. Dispatches control to a command based on parsed arguments.
+
+- **add_generate_arguments(parser)**  
+  Adds arguments relevant to documentation generation to the provided `argparse` parser.
+
+- **create_subcommand_parser()**  
+  Builds an `argparse` parser supporting structured subcommands (`generate`, `analyze`, `validate-config`).  
+  *Provides*:  
+    - Examples in help/epilog  
+    - User-friendly argument structure  
+    - Consistent help output
+
+- **create_direct_parser()**  
+  Builds a parser for the older, direct-argument CLI (i.e., without subcommands), just for the `generate` workflow.
+
+- **run_documentation_generation(args)**  
+  Core function that manages and invokes the documentation pipeline via `DocumentationPipeline`. Handles cleanup operations and validates sufficient argument combinations.
+
+- **run_cleanup(args)**  
+  Implements the `--cleanup` operation:
+    - Scans source files in the repo to determine required docs
+    - Compares to current documentation output
+    - Removes orphaned docs and empty directories
+    - Regenerates or removes the documentation guide accordingly
+
+- **run_repository_analysis(args)**  
+  Analyzes a repository using `CodeAnalyzer`. Prints stats about file types, sizes, and organization. Highlights files that would be processed based on config.
+
+- **run_config_validation(args)**  
+  Loads and checks configuration for validity, printing key model/provider settings and credentials. Catches missing API keys and flags configuration errors.
+
+---
+
+### Imported Modules/Classes
+
+- **argparse, sys, Path**: Standard Python utility modules for CLI and path handling.
+- **src.pipeline.DocumentationPipeline**: Main class to orchestrate documentation generation workflows.
+- **src.config.ConfigManager**: Handles config file loading and validation.
+- **src.code_analyzer.CodeAnalyzer**: Scans and analyzes the codebase structure.
+
+- **Dynamically imported for guide generation (within `run_cleanup`)**:
+  - `src.guide_generator.GuideGenerator`
+  - `src.document_processor.DocumentProcessor`
+  - `src.llm_manager.LLMManager`
+  - `src.models` (for `DocumentationResult`, `PipelineState`, etc.)
 
 ---
 
 ## Dependencies
 
-- **`src.pipeline`**: For the main documentation generation process.
-- **`src.config`**: For configuration handling and API key management.
-- **`src.code_analyzer`**: For repository analysis and file discovery.
-- **`src.guide_generator`, `src.document_processor`, `src.llm_manager`, `src.models`**: Used internally, especially for guide regeneration during cleanup.
-- **Standard library**: `argparse`, `sys`, `pathlib`, `traceback`.
+This file depends on:
 
-### What depends on `main.py`:
+- Internal modules:
+  - `src.pipeline`
+  - `src.config`
+  - `src.code_analyzer`
+  - (During cleanup: `src.guide_generator`, `src.document_processor`, `src.llm_manager`, `src.models`)
+- Configuration file (default: `config.yaml`) for pipeline options and credentials.
+- A directory structure with code and, optionally, preexisting documentation.
 
-- This script is intended to be run directly (`python main.py ...`) as the command-line interface to the toolkit.
-- Other scripts or launch configurations (e.g., VS Code, MCP server setups, CLI wrapper scripts) may call this file as their entry point.
+Other files and scripts (e.g., `mcp_server.py`, test scaffolding) and downstream documentation browsers/tools depend on this entry point for generating and updating the docs.
 
 ---
 
 ## Usage Examples
 
-### Documentation Generation
+### Generating Documentation
 
+**Subcommand Style:**
 ```bash
-# Generate individual file docs only
-python main.py generate -r path/to/repo -f
+# Generate docs for all files and the guide
+python main.py generate -r /path/to/repo -f -D -g
 
-# Generate design docs only
-python main.py generate -r path/to/repo -D
+# Generate only file-level docs
+python main.py generate -r /path/to/repo -f
 
-# Generate both file and design docs
-python main.py generate -r path/to/repo -f -D
+# Generate only design docs
+python main.py generate -r /path/to/repo -D
 
-# Only documentation guide
-python main.py generate -r path/to/repo -g
-
-# All outputs, with explicit config and custom output location
-python main.py generate -r path/to/repo -f -D -g -c alternate-config.yaml -o path/to/output
+# Generate the documentation guide
+python main.py generate -r /path/to/repo -g
 ```
 
-Short syntax for backward-compatible invocation:
-
+**Legacy/Direct Style:**
 ```bash
-python main.py -r path/to/repo -f -D -g
+python main.py -r /path/to/repo -f -g
 ```
 
-### Orphaned Documentation Cleanup
+### Cleanup Orphaned Documentation
 
 ```bash
+# Remove documentation for source files that no longer exist, update guide
 python main.py generate -r /path/to/repo --cleanup
-```
 
-Or with classic syntax:
-
-```bash
+# Or, using the direct/legacy syntax:
 python main.py -r /path/to/repo --cleanup
 ```
 
-### Repository Analysis
+### Analyze a Repository
 
 ```bash
 python main.py analyze /path/to/repo
 ```
 
-### Configuration Validation
+### Validate Configuration
 
 ```bash
-python main.py validate-config --config my-config.yaml
+python main.py validate-config
 ```
+You can specify a non-default config:
+
+```bash
+python main.py validate-config --config myconfig.yaml
+```
+
+---
+
+## Design Notes
+
+- **Backward Compatibility**: Supports both subcommands and the direct-argument CLI for users upgrading from earlier versions.
+- **Graceful Exception Handling**: Handles keyboard interrupts (`Ctrl+C`) and prints full tracebacks in verbose mode for easier troubleshooting.
+- **User Guidance**: All major actions echo the current operation, show status, and use emojis for accessibility.
+- **Separation of Concerns**: Argument parsing and command dispatching are handled separately, while business logic is delegated to pipeline/utility modules.
 
 ---
 
 ## Typical Workflow
 
-1. **Validate Config** (optional but recommended):  
-   `python main.py validate-config`
-
-2. **Analyze Repository** (optional for inspection):  
-   `python main.py analyze /path/to/repo`
-
-3. **Generate Documentation**:  
-   `python main.py generate -r /path/to/repo -f -D -g`
-
-4. **Clean Up Orphaned Docs** (as needed):  
-   `python main.py -r /path/to/repo --cleanup`
+1. **User runs** `python main.py generate ...` to generate/update docs
+2. **Pipeline** scans the repository, runs LLM analysis, produces documentation files and (optionally) a guide
+3. **If files were deleted**: `--cleanup` will remove orphaned docs, clean output directories, and update the guide
+4. **Analysis/validation** commands help inspect repository structure and configuration health
+5. **Results**: Individual `*_documentation.md` files, updated design docs, and a `documentation_guide.md` are created/updated
 
 ---
 
-## Additional Notes
+## See Also
 
-- **Error Handling**: Displays human-friendly error messages, with stack traces if `--verbose` is enabled.
-- **Incremental/Selective Generation**: Flag combinations control what gets generated.
-- **Integrated Cleanup**: `--cleanup` can be run alone or combined with other generation flags.
-- **Comprehensive Help**: Argument parsers provide detailed usage examples and help info.
+- [Documentation Cleanup Feature Test](#) – for specific details on cleanup feature
+- Project's detailed README and guide for info on MCP server usage, configuration, and scripting
 
 ---
 
-## Conclusion
+**Entrypoint:**  
+```python
+if __name__ == "__main__":
+    main()
+```
 
-The `main.py` script is the command-line "front door" to the entire automated documentation solution. It unifies documentation workflows, repository introspection, robust configuration validation, and orphaned documentation maintenance—all in a user-friendly CLI package.
+---
+
+This file forms the essential **interface between user intent and the documentation system** for large codebases. All major operations—generation, cleanup, validation, and analysis—are available from this script, making it central to repository documentation management in this project.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: f93397c858e522b95e84b2973b7e1ca491a59b686c5aef042d1653d0d356176b
+file_hash: c6d3298884b8df33fa6a86c1b56e7b5bd14ac995527955e73f64c536761d9909
 relative_path: main.py
-generation_date: 2025-07-01T23:04:41.254654
+generation_date: 2025-07-01T23:19:54.443664
 ```
 <!-- END GENERATION METADATA -->

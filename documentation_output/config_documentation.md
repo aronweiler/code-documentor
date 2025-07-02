@@ -4,127 +4,151 @@
 
 # Documentation for config.yaml
 
-# Documentation: `config.yaml`
+# config.yaml Documentation
 
 ## Purpose
 
-This file defines the **central configuration** for the documentation generation pipeline. It specifies all operational parameters for AI model invocation, file selection and processing, documentation output formatting, documentation template management, and advanced features such as retry logic. It exists to allow maintainers and operators to easily customize, tune, and extend the documentation workflow without changing code.
+This file serves as the central configuration for an automated documentation pipeline powered by AI. It defines model settings, processing parameters, file handling rules, documentation output formats, template structures for various document types, and behaviors for retrying failed AI generation attempts. It exists to allow users and developers to customize how the documentation system analyzes, processes, and renders documentation across a large, multi-language codebase.
 
 ---
 
 ## Functionality
 
-`config.yaml` provides structured settings consumed by the documentation generator and server components (including AI-powered processing via code-documentor, MCP server, and related scripts). Its main functions are:
+The configuration enables and controls the following key functionalities:
 
-- **Model Selection and Tuning:** Configures the LLM provider (OpenAI, Anthropic, Azure), model name, temperature, token limits, and recursion settings for all AI operations.
-- **Token and Context Management:** Sets global and context-specific token budgets to support long-document summarization, chunking, and context handling.
-- **File Selection and Processing:** Defines which file types are included/excluded, how files are processed (incremental saving, max files), and custom glob patterns for project-specific needs.
-- **Documentation Output Control:** Determines output format (e.g., Markdown), whether to include original code, and layout details like side-by-side displays.
-- **Documentation Template Management:** Supplies extensive, customizable templates for all documentation artifacts—ranging from file-level prose to high-level project, architecture, and user/developer guides. This allows fine-grained control over generated document structure and content.
-- **Retry Logic for Robustness:** Provides settings to auto-retry failed or truncated generations and supplies a continuation prompt template to resume incomplete sections smoothly.
+- **AI Model Selection and Parameters:** Specifies which large language model (LLM) provider to use, the model name, generation parameters like `temperature`, `max_tokens`, and recursion limits for processing nested documentation or large logical structures.
+
+- **Token Management:** Controls memory and summarization strategies, including chunk sizes for processing large files or contexts, and when to trigger context summarization to stay within model limits.
+
+- **File Processing Rules:** Defines which file extensions are processed (e.g., `.py`, `.js`, `.yaml`), and which patterns (directories, files, caches) should be excluded from documentation runs.
+
+- **Pipeline Processing Parameters:** Sets global limits for the documentation run, such as the maximum number of files and whether operations should be incremental (saving as files are documented).
+
+- **Output Configuration:** Determines how generated documentation is formatted (e.g., Markdown), whether original code is included, and if documentation should be presented side-by-side with code.
+
+- **Documentation Templates:** Provides templates (with variables and instructions) for various document sections and types:
+  - Project-level documents (overview, scope)
+  - System architecture (overview, components)
+  - Design, user guide, developer guide, API, module, testing, deployment documentation
+  - Each template section can be enabled or disabled, and has its own custom instructions, structure, and token limit.
+  
+- **Retry and Continuation for AI Generation:** Sets how many retries should occur if the AI fails (e.g., due to truncation), and provides prompts for the model to continue output in case of partial generation.
 
 ---
 
 ## Key Components
 
-### 1. **Model Configuration (`model`)**
-- `provider`: Sets AI backend (`openai`, `anthropic`, or `azure_openai`).
-- `name`: Model name (e.g., `"gpt-4.1"`).
-- `temperature`: Model creativity (set to `1` for `o4-mini` as required).
-- `max_tokens`: The total output length the LLM can generate.
-- `recursion_limit`: Controls maximum call depth for advanced workflows (e.g., LangGraph).
+- **model:**  
+  Configuration for AI model provider, model name, temperature, token limit, and recursion depth.
 
-### 2. **Token Management (`token_limits`)**
-- `max_context_tokens`: Caps context window for document context during processing.
-- `summarization_threshold`: Triggers summarization for very large contexts.
-- `chunk_size`: Sets how large each document chunk should be broken for processing.
+- **token_limits:**  
+  Governs limits on context size and summarization thresholds to manage LLM context window constraints.
 
-### 3. **Processing Control (`processing`)**
-- `max_files`: Maximum number of files to process (0/null for unlimited).
-- `save_incrementally`: Whether to save documentation output as each file is completed.
+- **processing:**  
+  Controls high-level file processing behavior (max files, incremental saves).
 
-### 4. **File Processing (`file_processing`)**
-- `supported_extensions`: File extensions eligible for documentation.
-- `exclude_patterns`: Directories and files to skip (e.g., caches, build outputs, binary logs, and common metadata files).
+- **file_processing:**  
+  Details which source file types are included, and which are to be excluded (common for dependencies, build outputs, etc.).
 
-### 5. **Output Specification (`output`)**
-- `format`: Format for generated documentation (e.g., `"markdown"`).
-- `include_code`: Whether to embed original code within the documentation.
-- `side_by_side`: Whether to use paired code-commentary in rendered output.
+- **output:**  
+  Formats and options for final documentation output, such as Markdown format, code inclusion, and documentation layout.
 
-### 6. **Documentation Templates (`templates`)**
-- `file_documentation`: Template for per-file docs using placeholders.
-- `documents`: Nested configuration for **project_overview**, **architecture**, **user_guide**, **developer_guide**, and (optionally) **design**, **API**, **module**, **testing**, and **deployment** documentation. Each allows granular `enabled` flags, tokens limits, and fully editable generation instructions.
+- **templates:**  
+  The heart of the documentation system: defines the global and per-document-type templates (using placeholders for dynamic values). Hierarchically arranged (project_overview, architecture, user_guide, etc.), each with sections, enabled switches, and Markdown preambles.
 
-### 7. **Retry Logic (`retry_config`)**
-- `max_retries`: How many times to retry failed/truncated generations.
-- `retry_on_truncation`: Retry when output is incomplete due to token limit.
-- `continuation_prompt`: Custom prompt for resuming incomplete output, keeping style and format consistent.
+- **retry_config:**  
+  Sets retry policies for AI operations and supplies a custom prompt to ensure seamless continuation if generation is truncated.
 
 ---
 
 ## Dependencies
 
-- **Upstream consumers:** The documentation generator (`main.py`), MCP server (`mcp_server.py`), LangGraph-based workflows, and related tools (`test_mcp_tools.py`) all load and parse this configuration at startup or runtime.
-- **Downstream usage:** All AI operations, file selection, output writing, and documentation structure strictly follow the logic described here.
-- **Third-party:** This file assumes you use LLM providers named here (OpenAI, Anthropic, or Azure) and that your project structure and file types align with those in `supported_extensions` and `exclude_patterns`.
+### Internal
+- **Documentation Pipeline/Application:**  
+  The pipeline or application that consumes this config file must be able to:
+    - Parse YAML configuration.
+    - Interface with the specified LLM API (OpenAI, Anthropic, Azure OpenAI).
+    - Process and traverse source code file trees.
+    - Apply filtering logic (inclusion/exclusion) as specified.
+    - Manage output formatting and documentation assembly using the indicated templates and section settings.
+    - Handle retry and continuation logic for robust AI output.
+
+### External
+- **LLM Providers:**  
+  Actual execution depends on access to compatible LLM APIs (OpenAI, etc.), with support for the named models and configuration options.
+
+- **Codebase:**  
+  Should be used in conjunction with a source code repository or directory structure; file inclusions and exclusions depend on the intended project layout.
 
 ---
 
 ## Usage Examples
 
-- **Default Operation**: When running documentation generation, the system loads `config.yaml` from its working directory to know which files to include, what LLM/model to call, and how to format resulting documentation.
-    ```bash
-    python main.py generate --repo-path /path/to/repo
-    ```
-    > Uses this config file to guide everything about the run.
+### 1. Getting Started with the Pipeline
 
-- **Custom Model/Scope**: To change the LLM or restrict documentation to only a subset of filetypes, edit the `model` and `file_processing` sections accordingly (e.g., to use Claude instead of GPT, or add `.md` to extensions).
+Most documentation generation tools or custom scripts would load `config.yaml` automatically or with an explicit path. Example (pseudo-code):
 
-- **Enable/Disable Document Types**: You can selectively turn on or off entire documentation sections (like `architecture`, `developer_guide`, etc.) by toggling the `enabled` flag.
+```python
+import yaml
+from documentation_pipeline import DocumentationGenerator
 
-- **Template Customization**: To reword or localize documentation, edit the YAML templates—these are injected verbatim into LLM prompts.
+# Load the configuration
+with open('config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
 
-- **Retry and Continuation**: Failed document generations (such as incomplete large section outputs) will be retried up to `max_retries`, automatically using the `continuation_prompt` template to resume from the last good output segment.
+# Initialize and run documentation generation
+docgen = DocumentationGenerator(config)
+docgen.run()
+```
+
+### 2. Customizing the Output
+
+To generate side-by-side Markdown documentation without original code and for up to 1,000 files:
+- Set `output.format` to `"markdown"`
+- Set `output.side_by_side` to `true`
+- Ensure `output.include_code` is `false`
+- Adjust `processing.max_files` as needed
+
+### 3. Enabling/Disabling Documentation Sections
+
+To customize which document types are produced, enable or disable corresponding sections:
+- To enable only project overview and user guide:
+  ```yaml
+  templates:
+    project_overview:
+      enabled: true
+    user_guide:
+      enabled: true
+    architecture:
+      enabled: false
+  ```
+- Individual sections within each document can also be toggled via `enabled: true/false`.
+
+### 4. Handling Large Files
+
+If your repo contains large files or codebases, adjust:
+```yaml
+token_limits:
+  max_context_tokens: 60000
+  summarization_threshold: 60000
+  chunk_size: 12000
+```
+and ensure the running environment and LLM support those limits.
+
+### 5. Retry on AI Truncation
+
+If a model call is truncated, the pipeline will use the `retry_config.continuation_prompt` to prompt the LLM to continue, ensuring seamless multi-part generation.
 
 ---
 
-## Example Configuration Edit
-
-Enabling API documentation:
-```yaml
-templates:
-  api_documentation:
-    enabled: true
-    sections:
-      - name: "api_overview"
-        enabled: true
-        max_tokens: 4096
-        template: |
-          # API Overview
-          ...
-```
-
-Changing output format:
-```yaml
-output:
-  format: "markdown"
-  include_code: true
-  side_by_side: false
-```
-
----
-
-## Summary
-
-This configuration file is the **heart of customization and workflow definition** for the documentation generation pipeline. By editing it, users control every aspect of the documentation process—from what is documented, to how summaries are written, to how robust the system is in the face of model output truncation. It supports advanced, modular, and extensible documentation generation for diverse codebases and organizational needs.
+**Note**: This config is foundational—edit it to fit your team’s size, codebase, AI provider, and workflow. Most docgen tools will reload or watch the file for changes. Review provider and model options and keep model limits in mind to avoid failed or partial generations.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: 718e1e11d3f4b7a8e432a80d26ef0ba94f92cca240329dd3fdefe672bbba9f14
+file_hash: 056549b9215b6c362ceb562f8dd3fd4d2109253f0852a9532016b74b1769f2a5
 relative_path: config.yaml
-generation_date: 2025-07-01T23:04:09.754263
+generation_date: 2025-07-01T23:28:58.924382
 ```
 <!-- END GENERATION METADATA -->

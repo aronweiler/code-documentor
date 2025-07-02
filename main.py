@@ -550,22 +550,25 @@ def run_documentation_generation(args):
             force_full_guide=args.force_full_guide,
         )
 
+        # Extract results from the LangGraph state dict
+        results = final_state.get("results", [])
+        
         # Print summary
         successful = len(
             [
                 r
-                for r in final_state.results
+                for r in results
                 if r.success and r.documentation != "[SKIPPED - No changes detected]"
             ]
         )
         skipped = len(
             [
                 r
-                for r in final_state.results
+                for r in results
                 if r.success and r.documentation == "[SKIPPED - No changes detected]"
             ]
         )
-        failed = len([r for r in final_state.results if not r.success])
+        failed = len([r for r in results if not r.success])
 
         print("\n" + "=" * 50)
         print("✅ Documentation Pipeline Completed!")

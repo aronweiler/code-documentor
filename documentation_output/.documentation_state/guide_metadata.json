@@ -1,16 +1,16 @@
 {
-  "guide_last_generated": 1751436394.8979769,
-  "guide_version": 6,
+  "guide_last_generated": 1751437744.8556046,
+  "guide_version": 8,
   "guide_structure_hash": "",
   "tracked_files": {
     "config.yaml": {
       "source_file_path": "config.yaml",
-      "source_file_modified": 1751434900.222763,
+      "source_file_modified": 1751437677.344019,
       "doc_file_path": "config_documentation.md",
-      "doc_generated": 1751436394.898704,
-      "doc_file_hash": "025fe7ba92607c0e415fae7f70bb997b6b37a2a8b4db9d37f69ab816c9832b8d",
-      "guide_entry_generated": 1751436394.898704,
-      "guide_entry_hash": "f19fe25bf5d43e48430b751fe267a23a77acf84a821206a7ac6ddf4d30d65968"
+      "doc_generated": 1751437744.8563747,
+      "doc_file_hash": "61732d28351d5be6463d91db9842a33ae2cb81962ff9fcb274ce9625dd6cbfb1",
+      "guide_entry_generated": 1751437744.8563747,
+      "guide_entry_hash": "3e2ea2d45301b3d8141da5a7b9f69f3986c7bc9be0bc008dcd754f88c7424044"
     },
     "install.sh": {
       "source_file_path": "install.sh",
@@ -23,12 +23,12 @@
     },
     "main.py": {
       "source_file_path": "main.py",
-      "source_file_modified": 1751436146.8731618,
+      "source_file_modified": 1751436898.6646378,
       "doc_file_path": "main_documentation.md",
-      "doc_generated": 1751436394.8995492,
-      "doc_file_hash": "0e48c41b924d526d6dfbf707c97e0516847dbed0ffd604fd6501d38943d7e8a9",
-      "guide_entry_generated": 1751436394.8995492,
-      "guide_entry_hash": "38e730d5b5cb5062ee5f901716ec4bed7849aca5cc56b0426c1c4165a9412171"
+      "doc_generated": 1751437199.7400682,
+      "doc_file_hash": "55d1b51d939c71d10ea1f359efe14c0477f24e7b3421b76706c2f63460145cce",
+      "guide_entry_generated": 1751437199.7400682,
+      "guide_entry_hash": "8163d7a101dd855d30e60284e4a339fae83f3659c6f9a3a538814e8cbc48a384"
     },
     "mcp_server.py": {
       "source_file_path": "mcp_server.py",
@@ -302,12 +302,12 @@
     },
     ".vscode\\launch.json": {
       "source_file_path": ".vscode\\launch.json",
-      "source_file_modified": 1751436232.6285827,
+      "source_file_modified": 1751437594.8243864,
       "doc_file_path": ".vscode\\launch_documentation.md",
-      "doc_generated": 1751436394.898314,
-      "doc_file_hash": "0170d0782aeb9fe98d314cbbee50c4d29aa0664bb3bd1215302326049971392e",
-      "guide_entry_generated": 1751436394.898314,
-      "guide_entry_hash": "37f0aa06174cfb94ab2cce46958e1394b885ed4aff9e5da7646f6dc8c0841f79"
+      "doc_generated": 1751437744.8560026,
+      "doc_file_hash": "26a24c696d3976363ff403d4fe3226545ae3f15dcb8134fe416f4abb53581491",
+      "guide_entry_generated": 1751437744.8560026,
+      "guide_entry_hash": "e3437f765b57be039b8473906eab652adddb5ed9b290302ffa709624626c8b2a"
     },
     "src\\context_manager.py": {
       "source_file_path": "src\\context_manager.py",

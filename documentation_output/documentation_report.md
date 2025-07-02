@@ -2,25 +2,24 @@
 
 ## Summary
 - **Total files processed**: 32
-- **Successfully documented**: 9
-- **Skipped (unchanged)**: 23
+- **Successfully documented**: 2
+- **Skipped (unchanged)**: 30
 - **Failed**: 0
 
 ## Successfully Documented Files
 - .vscode\launch.json
-- .vscode\settings.json
-- .vscode\tasks.json
 - config.yaml
-- main.py
-- src\code_analyzer.py
-- src\config.py
-- src\design_document_generator.py
-- src\models.py
 
 ## Skipped Files (No Changes)
+- .vscode\settings.json
+- .vscode\tasks.json
 - install.sh
+- main.py
 - mcp_server.py
+- src\code_analyzer.py
+- src\config.py
 - src\context_manager.py
+- src\design_document_generator.py
 - src\document_processor.py
 - src\file_processor.py
 - src\guide_generator.py
@@ -28,6 +27,7 @@
 - src\llm_manager.py
 - src\mcp_manager.py
 - src\mcp_models.py
+- src\models.py
 - src\pipeline.py
 - src\prompts\ai_assembly_system_message.py
 - src\prompts\continue_truncated_content_system_prompt.py
@@ -61,17 +61,16 @@
 - **developer_guide**: None
   - Failed sections:
     - development_setup: None
-    - contribution_guidelines: None
 
 ### Section Statistics
-- **Total sections**: 8
+- **Total sections**: 7
 - **Successful sections**: 6
-- **Failed sections**: 2
+- **Failed sections**: 1
 
 ## Existing Documentation Context
-- **Token count**: 7066
+- **Token count**: 4081
 - **Summarized**: False
-- **Original documents**: 3
+- **Original documents**: 1
 
 ## Processing Configuration
 - **Max files limit**: 1000

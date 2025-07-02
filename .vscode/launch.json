@@ -118,8 +118,7 @@
       "args": [
         "generate",        
         "--repo-path", ".",        
-        "--cleanup",
-        "--docs-path", "docs",        
+        "--cleanup",   
         "--file-docs",
         "--design-docs",
         "--guide",

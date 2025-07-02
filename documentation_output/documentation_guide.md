@@ -6,7 +6,7 @@
 This guide provides an overview of all generated documentation files in this repository.
 Use this guide to quickly locate relevant documentation when working on specific features or components.
 
-**Generated on:** 2025-07-01T23:06:34.897376  
+**Generated on:** 2025-07-01T23:29:04.854862  
 **Total documented files:** 31
 
 ## Documentation Files
@@ -15,7 +15,7 @@ Use this guide to quickly locate relevant documentation when working on specific
 
 **Documentation:** `.vscode\launch_documentation.md`
 
-**Summary:** The .vscode/launch.json file provides Visual Studio Code launch configurations tailored for automating documentation-related tasks with the project's main.py toolkit. It defines multiple debug/run profiles for generating file-level docs, guides, design docs, performing cleanup, repository analysis, and configuration validation—all directly from the VS Code interface. Each profile specifies program arguments, environment variables (notably setting PYTHONPATH), and supports platform-specific settings to streamline and standardize documentation generation workflows for developers. This setup ensures quick, consistent, and environment-aware execution of complex documentation tasks within the IDE.
+**Summary:** The `.vscode/launch.json` file configures Visual Studio Code debugging for this project, providing predefined launch configurations for running and testing documentation generation and analysis scripts via the main Python entrypoint (`main.py`). Key components include multiple debug scenarios for generating file-level, guide, and design documentation, repository analysis, and config validation, each with custom arguments and environment settings. This setup enables developers to efficiently initiate common workflows directly from the VS Code UI without manual command-line entry, streamlining development and documentation tasks.
 
 ---
 
@@ -23,7 +23,7 @@ Use this guide to quickly locate relevant documentation when working on specific
 
 **Documentation:** `config_documentation.md`
 
-**Summary:** The 'config.yaml' file serves as the central configuration for an AI-driven documentation generation pipeline, controlling all aspects of model invocation, file selection, processing, output formatting, template management, and robustness features. Key components include settings for LLM provider/model (OpenAI, Anthropic, Azure), token and context limits, file inclusion/exclusion rules, output format options, customizable documentation templates, and retry/continuation logic for handling failures. This file enables maintainers to fully customize and extend the documentation workflow without changing the codebase. It is essential for tailoring the documentation generator and related tools to specific project, workflow, or organizational requirements.
+**Summary:** The config.yaml file centrally configures an AI-powered automated documentation pipeline, specifying details such as which language model to use, file processing rules, output formats, and documentation templates for various document types. Key components include model selection and parameters, file inclusion/exclusion patterns, output formatting settings, detailed template structures, and retry logic for failed AI generations. This configuration enables customizable, large-scale documentation generation across multi-language codebases by integrating with LLM APIs and managing documentation assembly, file handling, and section enablement. It is intended to be tailored to individual projects and workflows, supporting extensibility, robust processing of large files, and adaptable documentation output.
 
 ---
 
@@ -223,7 +223,7 @@ Use this guide to quickly locate relevant documentation when working on specific
 
 **Documentation:** `main_documentation.md`
 
-**Summary:** main.py serves as the command-line interface (CLI) entry point for a documentation generation toolkit. It enables users to generate, analyze, and clean up documentation for a source code repository through various subcommands and arguments, including documentation generation, repository analysis, configuration validation, and orphaned documentation cleanup. Key components include the DocumentationPipeline for orchestrating documentation, ConfigManager for configuration handling, and CodeAnalyzer for repository structure analysis. The script emphasizes flexible argument parsing, robust error handling, and ease of use for managing code documentation workflows.
+**Summary:** The file `main.py` serves as the primary command-line entry point for a documentation generation toolkit, managing the overall process of generating, cleaning, validating, and analyzing technical documentation for code repositories. Its key functions include dispatching subcommands or direct arguments for documentation generation, repository analysis, configuration validation, and cleanup of orphaned docs, interfacing with pipeline and utility modules as needed. It ensures backward compatibility with older CLI styles, provides user-friendly output, and is critical for integrating user intent with automated documentation workflows in large codebases.
 
 ---
 
