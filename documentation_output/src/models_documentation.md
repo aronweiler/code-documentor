@@ -2,174 +2,166 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/models.py
+# Documentation for src\models.py
 
-# models.py
+# `src/models.py`
 
 ## Purpose
 
-This file defines all core data models used for configuration, input/output structures, state tracking, and results within a documentation generation pipeline. These models underpin the system's logic for generating code documentation, design documents, and guides in a structured, validated way, leveraging Pydantic for robust data validation and serialization.
+This file defines **data models** and schemas for the documentation generation toolkit. These models capture and organize configuration, requests, inputs, outputs, metadata, and workflow state throughout the documentation pipeline and related features (like guide or design document generation).
+
+The models are Pydantic-based, which allows for type-safe, validated, and easily serializable data structures that support the rest of the toolkit in orchestrating complex documentation workflows.
 
 ---
 
 ## Functionality
 
-The file declares a set of Pydantic `BaseModel` classes—each representing a different aspect of the documentation generation workflow. These models encapsulate:
+The main functionality of `src/models.py` is to:
 
-- Configuration details
-- API/request payloads
-- File and documentation representations
-- Guides and design document structure
-- State for incremental and full documentation processes
-
-All models are type-checked and can be readily serialized/deserialized for use in workflows, APIs, pipelines, and persistence.
+- Establish **structured data contracts** for all major pieces of documentation and processing state.
+- Enable validation and serialization of pipeline configuration, inputs, outputs, and intermediate state.
+- Support both **file-level documentation** and **design documentation** workflows, including incremental updates.
+- Track metadata and changes for efficient guide generation and orphan handling.
+- Serve as the backbone for type hints and structure in pipeline orchestration code (e.g., in LangGraph workflows).
 
 ---
 
 ## Key Components
 
-### Configuration & Request Models
+### 1. Pipeline and Request Models
 
-- **PipelineConfig**: Holds all adjustable pipeline settings (logging, models, token limits, file and output processing, templates, design doc specifics).
-- **DocumentationRequest**: Specifies a documentation generation request (repository, output paths, configuration, flags to trigger various documentation products).
+#### `PipelineConfig`
+Holds configuration options for various components of the documentation pipeline including model settings, logging, processing, output paths, templates, retry policy, etc.
 
-### File & Documentation Models
+#### `DocumentationRequest`
+Describes a request for generating documentation. Defines source and output locations, configuration, and flags for different documentation modes (file docs, design docs, guide, etc.).
 
-- **CodeFile**: Represents a single source code file being documented (path, contents, extension, etc.).
-- **DocumentationContext**: Captures the current state of documentation (raw content, token count, summarization status, original docs).
-- **DocumentationResult**: Encapsulates the result of documentation generation for a file (file, output, success status, error).
+---
 
-### Documentation Guide Structure
+### 2. File and Documentation Models
 
-- **DocumentationGuideEntry**: Details an entry in the auto-generated documentation guide (doc path, summary, source path).
-- **DocumentationGuide**: Aggregates guide entries, file counts, and a generation date for a full guide.
+#### `CodeFile`
+Represents a single code file to be documented: its path, content, extension, and relative repository path.
 
-### Design Document Models
+#### `DocumentationContext`
+Represents the current context (content and token statistics) of existing documentation for a file or the repo.
 
-- **DesignDocumentSection**: Represents a section within a design document (title, template, generated content).
-- **DesignDocument**: A complete design document (name, list of sections, status).
-- **DesignDocumentationState**: Tracks state across all design documents being generated (progress, context, completion).
+#### `DocumentationResult`
+Describes the result of generating documentation for a single file, including its status and possible error messages.
 
-### Incremental Guide Metadata and Change Tracking
+---
 
-- **FileMetadata**: Tracks file/documentation/guide entry hashes and modification dates for incremental processing.
-- **GuideMetadata**: Manages the global state of the guide and file tracking for on-the-fly incremental updates.
-- **ChangeSet**: Represents file changes (new, modified, deleted), signals if a full rebuild is needed.
+### 3. Guide and Metadata Models
 
-### Pipeline State
+#### `DocumentationGuideEntry`
+Represents a single entry in the documentation guide, mapping a documentation file to its source and providing a summary.
 
-- **PipelineState**: Aggregates overall pipeline state, including the request, input/output, file progress, generated documents, guides, design documentation state, and incremental update sets.
+#### `DocumentationGuide`
+The full documentation guide, which aggregates all entries, number of files, and the guide's generation date.
+
+#### `FileMetadata`
+Tracks metadata for a single file in the context of incremental (change-driven) guide generation.
+
+#### `GuideMetadata`
+Tracks state for the overall guide when supporting incremental updates, including last generation time and tracked file metadata.
+
+#### `ChangeSet`
+Represents differences discovered during guide generation—new, modified, and deleted files, and whether a full rebuild is needed.
+
+---
+
+### 4. Design Documentation Models
+
+#### `DesignDocumentSection`
+A section within a design document (e.g., Overview, Architecture), with content, template, error info, and retry stats.
+
+#### `DesignDocument`
+A full design document, comprised of sections, with overall status, file path, and error details.
+
+#### `DesignDocumentationState`
+Tracks progress in generating design documentation for the repository, including indices, completed document names, and aggregated context.
+
+---
+
+### 5. Pipeline and Workflow State
+
+#### `PipelineState`
+Central object for tracking the entire state of a documentation workflow as it proceeds—request, documents, results, indices, completion flags, and sub-states for guides and design documentation.
 
 ---
 
 ## Dependencies
 
-- [Pydantic](https://docs.pydantic.dev/): Used for all data models (`BaseModel`, `Field`).
-- [typing](https://docs.python.org/3/library/typing.html): For type annotations (`Dict`, `List`, `Optional`, `Any`).
-- [pathlib.Path](https://docs.python.org/3/library/pathlib.html): To represent file system paths.
-
-#### Internal/External Project Dependencies
-
-- **Depends On**: None directly; pure model definitions.
-- **Depended On By**: All modules and components of the documentation pipeline that need type-safe structures for configuration, requests, documentation results, guide rendering, and state management.
+- **[Pydantic](https://docs.pydantic.dev/):** All models inherit from `BaseModel` for data validation/serialization.
+- **Python Standard Library:** `Path`, `Dict`, `List`, `Optional`, `Any`, `Field`.
+- This file is *self-contained* in terms of model definitions, but it is expected to be heavily imported and used by the main pipeline, CLI commands, and orchestration code throughout the toolkit (e.g., in workflow, processing, generation, and server modules).
 
 ---
 
 ## Usage Examples
 
-Below are practical usages for some of the primary classes:
+Typical usage involves importing relevant models in pipeline and orchestration code:
 
 ```python
-from pathlib import Path
-from src.models import (
-    PipelineConfig, DocumentationRequest, CodeFile, DocumentationResult,
-    PipelineState, DocumentationGuide, DesignDocumentSection
-)
+from src.models import DocumentationRequest, PipelineConfig, PipelineState
 
-# Example: Creating a configuration for the pipeline
-config = PipelineConfig(
-    logging={'level': 'INFO'},
-    model={'name': 'gpt-4'},
-    token_limits={'max_tokens': 2048},
-    file_processing={'exclude_patterns': ['tests/*']},
-    output={'format': 'markdown'},
-    templates={'doc_template': '...'},
-    design_docs={'enabled': True}
-)
-
-# Example: Submitting a documentation generation request
+# Creating a documentation generation request
 request = DocumentationRequest(
-    repo_path=Path('/my/project'),
-    docs_path=Path('/my/project/docs'),
-    output_path=Path('/my/project/out'),
-    config=config
+    repo_path=Path("/path/to/repo"),
+    output_path=Path("/path/to/docs_out"),
+    config=PipelineConfig(),
+    file_docs=True,
 )
 
-# Example: Representing a code file to document
-code_file = CodeFile(
-    path=Path('src/models.py'),
-    content='...',
-    extension='py',
-    relative_path='src/models.py'
-)
-
-# Example: Documenting result output
-doc_result = DocumentationResult(
-    file_path=Path('src/models.py'),
-    documentation='# models.py\n...\n',
-    success=True
-)
-
-# Example: Tracking pipeline state
-state = PipelineState(
+# Managing pipeline state
+pipeline_state = PipelineState(
     request=request,
-    existing_docs=DocumentationContext(content='', token_count=0),
-    code_files=[code_file],
-    results=[],
-    current_file_index=0,
-    completed=False
+    existing_docs=DocumentationContext(content="", token_count=0)
 )
 ```
 
----
+As new documentation is generated:
+- `CodeFile` records the file to be processed.
+- `DocumentationResult` captures per-file outcomes.
+- The state of the full workflow is encapsulated in a `PipelineState` object, which flows through orchestration steps (e.g., in LangGraph-based workflows).
 
-## Summary Table of Classes
+Design documentation workflows similarly use the `DesignDocument*` models to orchestrate multi-section document assembly, error tracking, retries, and collation.
 
-| Class                        | Description                                                                 |
-|------------------------------|-----------------------------------------------------------------------------|
-| `PipelineConfig`             | Core configuration for documentation pipeline                               |
-| `DocumentationRequest`       | Request model for initiating documentation generation                      |
-| `CodeFile`                   | Represents a single source file                                            |
-| `DocumentationContext`       | Captures the state of documentation context                                |
-| `DocumentationResult`        | Output/result of documentation generation                                  |
-| `DocumentationGuideEntry`    | An entry in the cumulative documentation guide                             |
-| `DocumentationGuide`         | Aggregates and describes the full documentation guide                      |
-| `DesignDocumentSection`      | A section in a design document                                             |
-| `DesignDocument`             | A complete design document (sections, status, etc.)                        |
-| `DesignDocumentationState`   | Overall state during design documentation generation                       |
-| `FileMetadata`               | Tracks file-specific metadata for incremental documentation                |
-| `GuideMetadata`              | Tracks metadata and state for the entire documentation guide               |
-| `ChangeSet`                  | Represents file changes for incremental guide generation                   |
-| `PipelineState`              | Aggregate state of the documentation pipeline workflow                     |
+Incremental guide generation and cleanup leverage `GuideMetadata`, `FileMetadata`, and `ChangeSet` to efficiently update outputs when the codebase changes.
 
 ---
 
-## Notes
+## Summary Table of Models
 
-- All models use Pydantic for data validation, type-checking, and auto-completion.
-- Designed for **extensibility**: easy to add new fields or models for evolving documentation requirements.
-- These models do **not** implement business logic; their sole responsibility is structured data exchange and validation.
+| Model                         | Description                                 |
+|-------------------------------|---------------------------------------------|
+| PipelineConfig                | Pipeline config options                     |
+| DocumentationRequest          | Parameters for docs generation              |
+| CodeFile                      | Tracks code file to be documented           |
+| DocumentationContext          | Holds existing doc context and stats        |
+| DocumentationResult           | Result and status for each doc file         |
+| DocumentationGuideEntry       | Single entry in main documentation guide    |
+| DocumentationGuide            | Full documentation guide/TOC                |
+| DesignDocumentSection         | Single section of a design document         |
+| DesignDocument                | Aggregated design doc with sections         |
+| DesignDocumentationState      | State/progress in design doc generation     |
+| FileMetadata                  | File/guide sync state for incremental update|
+| GuideMetadata                 | Guide-wide change tracking & metadata       |
+| ChangeSet                     | Tracks new/modified/deleted files for guides|
+| PipelineState                 | Master orchestration/workflow state         |
 
 ---
 
-**End of Documentation**
+## Conclusion
+
+This models module is **central** to the documentation toolkit. It provides the rigor, safety, and organization needed for reliable, reproducible, and extensible documentation workflows — from basic file-level documentation to advanced guide, design, and incremental update features. All major components of the toolkit depend on these schemas for both input validation and inter-component communication.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: f2ca90a5f63c8f940e2b792f077f313027cfb50faa57f7bb58b50bff63bbeb94
-relative_path: src/models.py
-generation_date: 2025-06-30T00:09:56.096724
+file_hash: d7c01d31a383e628f855624371dc7cad415b262f550370b89cbbbebdb4a0da8f
+relative_path: src\models.py
+generation_date: 2025-07-01T23:06:11.191942
 ```
 <!-- END GENERATION METADATA -->

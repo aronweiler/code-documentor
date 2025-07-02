@@ -2,65 +2,101 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/prompts/generate_file_documentation_system_message.py
+# Documentation for src\prompts\generate_file_documentation_system_message.py
 
-# File: src/prompts/generate_file_documentation_system_message.py
+# File Documentation: `src/prompts/generate_file_documentation_system_message.py`
 
-## Purpose
+## 1. Purpose
 
-This file defines a template string intended for use as a system message by an AI-based documentation generator. The template instructs the generator on composing comprehensive documentation for a code file, including specific content sections and formatting guidelines. This ensures that generated documentation is consistent, thorough, and formatted in Markdown.
+This file defines a formatted system message template, `GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`, intended for use in automated or AI-driven documentation generation workflows. The template guides a documentation agent (e.g., an LLM) to systematically document a Python code file based on supplied context and file-specific information.
 
-## Functionality
+## 2. Functionality
 
-The primary function of this file is to provide a pre-formatted instruction message (`GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`) that can be customized dynamically using project context and file metadata. This message guides the documentation generator to include critical information such as purpose, functionality, key components, dependencies, and usage examples for the given code file.
+The main purpose of this file is to provide a reusable multi-line string (Python triple-quoted string) that acts as a prompt or instruction set. This prompt is likely used to standardize documentation output across files in a codebase.
 
-- The message contains placeholders (`{context}`, `{current_file_extension}`, and `{current_file_relative_path}`) to be filled in with actual values when generating documentation for a specific file. 
-- The template guarantees that generated documentation will always include clear and relevant sections.
+The `GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE` string is designed to be dynamically formatted with relevant project context, file extension, and relative file path. Its structure includes instructions to:
+- Parse project documentation context
+- Generate sections such as Purpose, Functionality, Key Components, Dependencies, and Usage Examples
+- Output the result in clean Markdown
+- Specify file metadata (extension and path)
 
-## Key Components
+## 3. Key Components
 
-### Variable: `GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`
+- **`GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE`**  
+  A multi-line (triple-quoted) string template containing placeholders:
+  - `{context}`: for existing project documentation or contextual information
+  - `{current_file_extension}`: for the file extension to be documented
+  - `{current_file_relative_path}`: for the relative path of the file to be documented
 
-- **Type**: `str`
-- **Description**: A multi-line string (using triple quotes) that acts as an instructional system message for an AI writing technical documentation. 
-- **Placeholders**:
-  - `{context}`: To be filled with existing project documentation or relevant context.
-  - `{current_file_extension}`: File extension of the target code file (e.g., `.py`).
-  - `{current_file_relative_path}`: Path to the target code file relative to the project root.
+  Example placeholder usage:
+  ```python
+  formatted_message = GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE.format(
+      context=project_docs, 
+      current_file_extension='.py', 
+      current_file_relative_path='src/utils/some_file.py'
+  )
+  ```
 
-## Dependencies
+## 4. Dependencies
 
-- **Depends on**: No external modules or packages. Usage assumes that some other part of the system (e.g., a prompt formatting or LLM invocation module) will fill in the string placeholders.
-- **Depended on by**: Any module or script that requires standardized, instructive prompts for AI-generated code documentation.
+- **What this file depends on:**  
+  - Python standard formatting capabilities (`str.format`)
+  - It is typically invoked by a larger documentation generation or prompt orchestration system that provides required values for formatting.
 
-## Usage Examples
+- **What depends on this file:**  
+  - Any system or module responsible for generating documentation prompts for code files—especially where LLMs are task-driven by system prompts (e.g., an AI documentation bot).
 
-This file is not typically run directly, but imported and used where documentation prompts need to be generated. For example:
+## 5. Usage Examples
+
+### Example 1: Formatting the Prompt for a Specific File
 
 ```python
 from src.prompts.generate_file_documentation_system_message import GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE
 
-context = "No existing documentation available."
-file_extension = '.py'
-relative_path = 'src/my_module/my_file.py'
+# Context and file metadata
+existing_docs = "No existing documentation available."
+file_ext = "py"
+relative_path = "src/utils/helpers.py"
 
+# Format the template for use
 system_message = GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE.format(
-    context=context,
-    current_file_extension=file_extension,
-    current_file_relative_path=relative_path
+    context=existing_docs,
+    current_file_extension=file_ext,
+    current_file_relative_path=relative_path,
 )
 
-# Use `system_message` as the prompt for an LLM generating documentation.
+# The system_message can now be fed to an LLM as a system prompt
 ```
 
-This would result in a well-structured Markdown prompt that guides the AI in creating precise and comprehensive documentation for the specified file.
+### Example 2: Using within a Documentation Pipeline
+
+```python
+def generate_documentation(file_path, context):
+    from src.prompts.generate_file_documentation_system_message import GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE
+    
+    file_ext = file_path.split('.')[-1]
+    system_prompt = GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE.format(
+        context=context,
+        current_file_extension=file_ext,
+        current_file_relative_path=file_path
+    )
+    # Send system_prompt and code context to an LLM-based doc generator
+
+# Example invocation
+generate_documentation('src/api/data_api.py', "Project is a RESTful data API.")
+```
+
+---
+
+**Summary**:  
+This file centralizes the definition of a documentation generation system message template, promoting consistency and reusability in automated code documentation workflows.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: 1382296ba5634db83b43c0773a79a0bfd131d284a5e610c6f1dcda3b0c07e8d9
-relative_path: src/prompts/generate_file_documentation_system_message.py
-generation_date: 2025-06-30T00:11:07.800746
+relative_path: src\prompts\generate_file_documentation_system_message.py
+generation_date: 2025-07-01T22:18:47.795874
 ```
 <!-- END GENERATION METADATA -->

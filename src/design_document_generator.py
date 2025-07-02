@@ -55,7 +55,7 @@ class DesignDocumentGenerator:
         # First time initialization - create the documents
         print("Initializing design documentation generation...")
 
-        design_config = self.config.design_docs.get("documents", {})
+        design_config = self.config.templates.get("documents", {})
         documents = []
 
         for doc_name, doc_config in design_config.items():
@@ -168,7 +168,7 @@ class DesignDocumentGenerator:
         context: str,
     ) -> str:
         """Generate content for a specific section with retry logic."""
-        max_retries = self.config.design_docs.get("retry_count", 3)
+        max_retries = self.config.retry_config.get("max_retries", 3)
 
         for attempt in range(max_retries + 1):
             try:
@@ -191,7 +191,7 @@ class DesignDocumentGenerator:
 
                 # Check if content was truncated
                 if self._is_content_truncated(content, section.max_tokens):
-                    retry_config = self.config.design_docs.get("retry", {})
+                    retry_config = self.config.retry_config
                     if retry_config.get("retry_on_truncation", True):
                         print(
                             f"  → Content truncated, retrying with continuation (attempt {attempt + 1})"

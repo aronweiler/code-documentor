@@ -2,101 +2,87 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/prompts/summarize_docs_system_message.py
+# Documentation for src\prompts\summarize_docs_system_message.py
 
 # File: `src/prompts/summarize_docs_system_message.py`
 
 ## Purpose
 
-This file defines a system message prompt template specifically for instructing an AI assistant to summarize chunks of technical documentation. The aim is to ensure that summaries retain crucial technical nuances, architectural decisions, implementation details, and dependency relationships. This prompt is primarily intended for use in larger systems involving programmatic documentation summarization using AI language models (such as OpenAI's GPT).
-
----
+This file defines a system message prompt intended for use in automated systems that summarize technical documentation. The purpose of this message is to instruct an AI or summarization engine on how to generate effective summaries of documentation chunks, ensuring that essential technical information is preserved.
 
 ## Functionality
 
-### Main Component
+The core component of this file is a string variable that contains explicit instructions for summarizing technical documentation. This prompt is typically supplied to language models or AI agents (such as OpenAI's GPT models) as the initial "system" message to guide the summarization behavior.
 
-#### `SUMMARIZE_DOCS_SYSTEM_MESSAGE`
+The message directs the summarizer to maintain:
+1. Key technical concepts and terminology
+2. Important architectural decisions
+3. Critical implementation details
+4. Dependencies and relationships
 
-- **Type:** `str`
-- **Description:**  
-  This constant contains a template string to be used as a "system" message when interacting with LLM-based agents. The message instructs the AI to act as a technical documentation summarizer and clearly lays out the requirements for how the incoming documentation chunk should be summarized. The requirements focus on:
-  1. Preserving key technical concepts and terminology.
-  2. Capturing architectural decisions.
-  3. Including critical implementation details.
-  4. Noting dependencies and relationships.
-  The summary should be both concise and comprehensive.
-
----
+It also emphasizes that the summary should be "concise but comprehensive."
 
 ## Key Components
 
-- **Constant:** `SUMMARIZE_DOCS_SYSTEM_MESSAGE`
-  - The only exported element from this file.
-  - It is intended to be injected into AI system prompts to guide behavior during documentation summarization tasks.
-
----
+- **`SUMMARIZE_DOCS_SYSTEM_MESSAGE`**  
+  - **Type:** `str`
+  - **Purpose:** Specifies system-level instructions for AI summarization of technical documentation.
+  - **Contents:** Clear directives regarding what to preserve and the tone of the summary.
 
 ## Dependencies
 
-### Internal Dependencies
+### Depends on
+- This file **does not import** any modules or have runtime dependencies.
 
-- This file does **not** import or depend on any other local modules or external libraries.
-
-### External Dependencies
-
-- Systems that utilize LLMs (Large Language Models), such as applications built with OpenAI's `openai` Python package or similar frameworks, may import and use this constant as part of their prompt design.
-
-### What Depends on It
-
-- This file will be imported by other modules or scripts that construct prompts for documentation-summarizing LLM workflows.
-
----
+### Depended on by
+- Any AI-driven tool or script that imports this file to fetch the `SUMMARIZE_DOCS_SYSTEM_MESSAGE` string—most commonly, prompt engineering frameworks or LLM-based summarization aides.
 
 ## Usage Examples
 
-Here's how this file and its system message constant would typically be used in an AI-powered documentation tool:
+Below are some example scenarios illustrating how this file might be used:
+
+### Example 1: Basic Import and Usage with OpenAI API
+
+```python
+from src.prompts.summarize_docs_system_message import SUMMARIZE_DOCS_SYSTEM_MESSAGE
+import openai
+
+response = openai.ChatCompletion.create(
+    model="gpt-4",
+    messages=[
+        {"role": "system", "content": SUMMARIZE_DOCS_SYSTEM_MESSAGE},
+        {"role": "user", "content": "DOCUMENTATION CHUNK TO SUMMARIZE HERE"}
+    ]
+)
+summary = response['choices'][0]['message']['content']
+```
+
+### Example 2: Using as a Prompt Template
 
 ```python
 from src.prompts.summarize_docs_system_message import SUMMARIZE_DOCS_SYSTEM_MESSAGE
 
-def get_summary(document_chunk, llm_client):
-    # Prepare messages for the LLM (e.g., OpenAI Chat API)
-    messages = [
-        {
-            "role": "system",
-            "content": SUMMARIZE_DOCS_SYSTEM_MESSAGE
-        },
-        {
-            "role": "user",
-            "content": document_chunk
-        }
+def summarize_doc_chunk(doc_chunk, llm_client):
+    prompt = [
+        {"role": "system", "content": SUMMARIZE_DOCS_SYSTEM_MESSAGE},
+        {"role": "user", "content": doc_chunk}
     ]
-    # Call the language model API
-    response = llm_client.chat_completion(messages=messages)
-    return response['choices'][0]['message']['content']
+    return llm_client.complete(prompt)
 
-# Usage
-chunk = """Your technical documentation chunk here."""
-summary = get_summary(chunk, llm_client=some_ai_client)
-print(summary)
+# Where `llm_client` is an instance interfacing with an LLM provider.
 ```
 
 ---
 
-## Summary
-
-- **Defines a specialized, reusable system prompt for AI documentation summarization.**
-- **Encourages retention of key technical and structural elements during summarization.**
-- **Intended for integration with LLM-based systems or scripts needing consistent, high-quality doc summaries.**
-
+**Summary:**  
+This file serves as a centralized definition for a system prompt instructing AI models on how to summarize technical documentation effectively, prioritizing key details while maintaining brevity. It can be reused wherever such summarization behavior is required.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: e4ac01d0bd7334d96e56907542f3b87fa44372917fa897e19b14c18800b7d6e0
-relative_path: src/prompts/summarize_docs_system_message.py
-generation_date: 2025-06-30T00:12:00.219430
+relative_path: src\prompts\summarize_docs_system_message.py
+generation_date: 2025-07-01T22:19:44.814590
 ```
 <!-- END GENERATION METADATA -->

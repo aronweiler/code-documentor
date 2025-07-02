@@ -4,7 +4,6 @@ from pathlib import Path
 from src.pipeline import DocumentationPipeline
 from src.config import ConfigManager
 from src.code_analyzer import CodeAnalyzer
-from src.document_processor import DocumentProcessor
 
 
 def main():
@@ -87,105 +86,11 @@ def add_generate_arguments(parser):
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
-
-
-def run_documentation_generation(args):
-    """Run the main documentation generation pipeline."""
-
-    # Validate flag combinations
-    if not (args.file_docs or args.design_docs or args.guide):
-        raise ValueError(
-            "Must specify at least one of --file-docs, --design-docs, or --guide"
-        )
-
-    print("🚀 Starting Documentation Pipeline")
-    print("=" * 50)
-
-    # Validate paths
-    repo_path = Path(args.repo_path)
-    if not repo_path.exists():
-        raise ValueError(f"Repository path does not exist: {repo_path}")
-
-    docs_path = None
-    if args.docs_path:
-        docs_path = Path(args.docs_path)
-        if not docs_path.exists():
-            raise ValueError(f"Documentation path does not exist: {docs_path}")
-
-    output_path = None
-    if args.output_path:
-        output_path = Path(args.output_path)
-
-    # Initialize pipeline
-    print(f"📁 Repository: {repo_path}")
-    print(f"📚 Existing docs: {docs_path if docs_path else 'None'}")
-    print(
-        f"📤 Output: {output_path if output_path else repo_path / 'documentation_output'}"
+    parser.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="Clean up orphaned documentation files for deleted source files"
     )
-    print(f"📝 File docs: {'Yes' if args.file_docs else 'No'}")
-    print(f"🎨 Design docs: {'Yes' if args.design_docs else 'No'}")
-    print(f"🎯 Documentation guide: {'Yes' if args.guide else 'No'}")
-    print(f"🔄 Force full guide regeneration: {'Yes' if args.force_full_guide else 'No'}")
-    print(f"⚙️ Config: {args.config}")
-    print()
-
-    try:
-        pipeline = DocumentationPipeline(args.config)
-
-        final_state = pipeline.run(
-            repo_path=repo_path,
-            docs_path=docs_path,
-            output_path=output_path,
-            file_docs=args.file_docs,
-            design_docs=args.design_docs,
-            guide=args.guide,
-            force_full_guide=args.force_full_guide,
-        )
-
-        # Print summary
-        successful = len(
-            [
-                r
-                for r in final_state["results"]
-                if r.success and r.documentation != "[SKIPPED - No changes detected]"
-            ]
-        )
-        skipped = len(
-            [
-                r
-                for r in final_state["results"]
-                if r.success and r.documentation == "[SKIPPED - No changes detected]"
-            ]
-        )
-        failed = len([r for r in final_state["results"] if not r.success])
-
-        print("\n" + "=" * 50)
-        print("✅ Documentation Pipeline Completed!")
-        print(f"📊 Results: {successful} generated, {skipped} skipped, {failed} failed")
-
-        if (
-            args.guide
-            and hasattr(final_state, "documentation_guide")
-            and final_state.documentation_guide
-        ):
-            print(
-                f"📋 Documentation guide created with {final_state.documentation_guide.total_files} entries"
-            )
-        if args.design_docs and args.file_docs:
-            print("📝 Individual + design documentation completed")
-        elif args.design_docs:
-            print("🎨 Design documentation completed")
-        elif args.file_docs:
-            print("📝 Individual documentation completed")
-
-        if failed > 0:
-            print(
-                "⚠️  Some files failed to process. Check the documentation report for details."
-            )
-
-    except Exception as e:
-        print(f"❌ Pipeline failed: {e}")
-        raise
 
 
 def create_subcommand_parser():
@@ -209,6 +114,9 @@ Examples:
 
   # All
   python main.py generate -r path/to/repo -f -D -g
+
+  # Cleanup orphaned documentation
+  python main.py generate -r path/to/repo --cleanup
 
   # Utility commands
   python main.py analyze path/to/repo
@@ -269,6 +177,9 @@ Examples:
 
   # All
   python main.py -r path/to/repo -f -D -g
+
+  # Cleanup orphaned documentation
+  python main.py -r path/to/repo --cleanup
         """,
     )
 
@@ -381,6 +292,307 @@ def run_config_validation(args):
 
     except Exception as e:
         print(f"❌ Configuration validation failed: {e}")
+        raise
+
+
+def run_cleanup(args):
+    """Run cleanup operation to remove orphaned documentation files."""
+    print("🧹 Starting Documentation Cleanup")
+    print("=" * 50)
+
+    # Validate paths
+    repo_path = Path(args.repo_path)
+    if not repo_path.exists():
+        raise ValueError(f"Repository path does not exist: {repo_path}")
+
+    output_path = None
+    if args.output_path:
+        output_path = Path(args.output_path)
+    else:
+        output_path = repo_path / "documentation_output"
+
+    if not output_path.exists():
+        print(f"📁 No documentation output directory found: {output_path}")
+        print("✅ Nothing to clean up!")
+        return
+
+    print(f"📁 Repository: {repo_path}")
+    print(f"📤 Documentation output: {output_path}")
+    print()
+
+    try:
+        # Load configuration
+        from src.config import ConfigManager
+        config_manager = ConfigManager(args.config)
+        config = config_manager.load_config()
+
+        # Scan repository for existing source files
+        print("🔍 Scanning repository for source files...")
+        analyzer = CodeAnalyzer(config)
+        code_files = analyzer.scan_repository(repo_path)
+        
+        # Create set of expected documentation file paths
+        expected_docs = set()
+        for code_file in code_files:
+            relative_path = code_file.path.relative_to(repo_path)
+            doc_filename = f"{relative_path.stem}_documentation.md"
+            expected_doc_path = output_path / relative_path.parent / doc_filename
+            expected_docs.add(expected_doc_path)
+        
+        print(f"✓ Found {len(code_files)} source files")
+        print(f"✓ Expecting {len(expected_docs)} documentation files")
+        
+        # Find all existing documentation files
+        print("\n🔍 Scanning documentation directory...")
+        existing_docs = set()
+        orphaned_docs = []
+        
+        # Scan for individual file documentation (excluding design docs)
+        for doc_file in output_path.rglob("*_documentation.md"):
+            # Skip design documentation directory
+            if "design_documentation" in str(doc_file.relative_to(output_path)):
+                continue
+            existing_docs.add(doc_file)
+            if doc_file not in expected_docs:
+                orphaned_docs.append(doc_file)
+        
+        print(f"✓ Found {len(existing_docs)} existing documentation files")
+        print(f"✓ Found {len(orphaned_docs)} orphaned documentation files")
+        
+        if not orphaned_docs:
+            print("\n✅ No orphaned documentation files found!")
+            print("🎉 Documentation directory is clean!")
+            return
+        
+        # Show orphaned files
+        print("\n📋 Orphaned documentation files to be removed:")
+        for doc_file in orphaned_docs:
+            relative_doc_path = doc_file.relative_to(output_path)
+            print(f"  🗑️  {relative_doc_path}")
+        
+        # Remove orphaned files
+        print(f"\n🗑️  Removing {len(orphaned_docs)} orphaned files...")
+        removed_count = 0
+        for doc_file in orphaned_docs:
+            try:
+                doc_file.unlink()
+                print(f"  ✓ Removed: {doc_file.relative_to(output_path)}")
+                removed_count += 1
+            except Exception as e:
+                print(f"  ❌ Failed to remove {doc_file.relative_to(output_path)}: {e}")
+        
+        # Clean up empty directories
+        print("\n🧹 Cleaning up empty directories...")
+        empty_dirs_removed = 0
+        for parent_dir in output_path.rglob("*"):
+            if parent_dir.is_dir() and parent_dir != output_path:
+                try:
+                    # Skip design_documentation directory
+                    if parent_dir.name == "design_documentation":
+                        continue
+                    if not any(parent_dir.iterdir()):
+                        parent_dir.rmdir()
+                        print(f"  ✓ Removed empty directory: {parent_dir.relative_to(output_path)}")
+                        empty_dirs_removed += 1
+                except OSError:
+                    # Directory not empty or other error
+                    pass
+        
+        # Update documentation guide if it exists
+        guide_path = output_path / "documentation_guide.md"
+        if guide_path.exists():
+            print("\n📝 Updating documentation guide...")
+            try:
+                # We'll need to regenerate the guide to remove orphaned entries
+                from src.guide_generator import GuideGenerator
+                from src.document_processor import DocumentProcessor
+                from src.llm_manager import LLMManager
+                
+                # Initialize components needed for guide regeneration
+                llm_manager = LLMManager(config_manager)
+                llm = llm_manager.initialize_llm()
+                doc_processor = DocumentProcessor(config)
+                guide_generator = GuideGenerator(llm, config, doc_processor)
+                
+                # Load remaining documentation files and regenerate guide
+                remaining_results = []
+                for doc_file in existing_docs:
+                    if doc_file not in orphaned_docs:
+                        # Create a mock DocumentationResult for the guide
+                        # Extract original file path from metadata if possible
+                        try:
+                            metadata = guide_generator.extract_metadata_from_doc(doc_file)
+                            if metadata and 'relative_path' in metadata:
+                                original_path = repo_path / metadata['relative_path']
+                            else:
+                                # Fallback: guess from doc filename
+                                doc_name = doc_file.stem.replace('_documentation', '')
+                                original_path = repo_path / doc_file.parent.relative_to(output_path) / f"{doc_name}{doc_file.suffix}"
+                            
+                            from src.models import DocumentationResult
+                            with open(doc_file, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            
+                            result = DocumentationResult(
+                                file_path=original_path,
+                                documentation=content,
+                                success=True
+                            )
+                            remaining_results.append(result)
+                        except Exception as e:
+                            print(f"  ⚠️  Warning: Could not process {doc_file.relative_to(output_path)}: {e}")
+                
+                # Generate updated guide
+                if remaining_results:
+                    from src.models import (
+                        PipelineState,
+                        DocumentationRequest,
+                        DocumentationContext
+                    )
+                    
+                    request = DocumentationRequest(
+                        repo_path=repo_path,
+                        output_path=output_path,
+                        config=config,
+                        guide=True
+                    )
+                    state = PipelineState(
+                        request=request,
+                        existing_docs=DocumentationContext(
+                            content="", token_count=0
+                        ),
+                        results=remaining_results
+                    )
+                    
+                    guide_generator.generate_documentation_guide(state)
+                    print("  ✓ Documentation guide updated")
+                else:
+                    # No remaining files, remove the guide
+                    guide_path.unlink()
+                    print("  ✓ Documentation guide removed (no remaining files)")
+                    
+            except Exception as e:
+                print(f"  ⚠️  Warning: Could not update documentation guide: {e}")
+        
+        print("\n" + "=" * 50)
+        print("✅ Cleanup completed!")
+        print(f"🗑️  Removed {removed_count} orphaned documentation files")
+        if empty_dirs_removed > 0:
+            print(f"📁 Removed {empty_dirs_removed} empty directories")
+        print("🎉 Documentation directory is now clean!")
+
+    except Exception as e:
+        print(f"❌ Cleanup failed: {e}")
+        raise
+
+
+def run_documentation_generation(args):
+    """Run the main documentation generation pipeline."""
+
+    # Validate flag combinations
+    if args.cleanup:
+        # Cleanup mode - doesn't require other flags
+        pass
+    elif not (args.file_docs or args.design_docs or args.guide):
+        raise ValueError(
+            "Must specify at least one of --file-docs, --design-docs, "
+            "--guide, or --cleanup"
+        )
+
+    print("🚀 Starting Documentation Pipeline")
+    print("=" * 50)
+
+    # Validate paths
+    repo_path = Path(args.repo_path)
+    if not repo_path.exists():
+        raise ValueError(f"Repository path does not exist: {repo_path}")
+
+    docs_path = None
+    if args.docs_path:
+        docs_path = Path(args.docs_path)
+        if not docs_path.exists():
+            raise ValueError(f"Documentation path does not exist: {docs_path}")
+
+    output_path = None
+    if args.output_path:
+        output_path = Path(args.output_path)
+
+    # Initialize pipeline
+    print(f"📁 Repository: {repo_path}")
+    print(f"📚 Existing docs: {docs_path if docs_path else 'None'}")
+    print(
+        f"📤 Output: {output_path if output_path else repo_path / 'documentation_output'}"
+    )
+    print(f"📝 File docs: {'Yes' if args.file_docs else 'No'}")
+    print(f"🎨 Design docs: {'Yes' if args.design_docs else 'No'}")
+    print(f"🎯 Documentation guide: {'Yes' if args.guide else 'No'}")
+    print(f"🔄 Force full guide regeneration: {'Yes' if args.force_full_guide else 'No'}")
+    print(f"🧹 Cleanup mode: {'Yes' if args.cleanup else 'No'}")
+    print(f"⚙️ Config: {args.config}")
+    print()
+
+    try:
+        if args.cleanup:
+            run_cleanup(args)
+            # Continue with normal generation if other flags are specified
+            if not (args.file_docs or args.design_docs or args.guide):
+                return
+
+        pipeline = DocumentationPipeline(args.config)
+
+        final_state = pipeline.run(
+            repo_path=repo_path,
+            docs_path=docs_path,
+            output_path=output_path,
+            file_docs=args.file_docs,
+            design_docs=args.design_docs,
+            guide=args.guide,
+            force_full_guide=args.force_full_guide,
+        )
+
+        # Print summary
+        successful = len(
+            [
+                r
+                for r in final_state.results
+                if r.success and r.documentation != "[SKIPPED - No changes detected]"
+            ]
+        )
+        skipped = len(
+            [
+                r
+                for r in final_state.results
+                if r.success and r.documentation == "[SKIPPED - No changes detected]"
+            ]
+        )
+        failed = len([r for r in final_state.results if not r.success])
+
+        print("\n" + "=" * 50)
+        print("✅ Documentation Pipeline Completed!")
+        print(f"📊 Results: {successful} generated, {skipped} skipped, {failed} failed")
+
+        if (
+            args.guide
+            and hasattr(final_state, "documentation_guide")
+            and final_state.documentation_guide
+        ):
+            print(
+                f"📋 Documentation guide created with {final_state.documentation_guide.total_files} entries"
+            )
+        if args.design_docs and args.file_docs:
+            print("📝 Individual + design documentation completed")
+        elif args.design_docs:
+            print("🎨 Design documentation completed")
+        elif args.file_docs:
+            print("📝 Individual documentation completed")
+
+        if failed > 0:
+            print(
+                "⚠️  Some files failed to process. Check the documentation report for details."
+            )
+
+    except Exception as e:
+        print(f"❌ Pipeline failed: {e}")
         raise
 
 

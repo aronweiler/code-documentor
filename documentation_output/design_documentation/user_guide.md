@@ -1,333 +1,333 @@
 <!-- AUTO-GENERATED DESIGN DOCUMENT -->
-<!-- Generated on: 2025-06-11T11:00:35.961492 -->
+<!-- Generated on: 2025-07-01T23:11:11.678174 -->
 <!-- Document: user_guide -->
 
-# Automated Documentation Generation Toolkit: User Guide
-
----
+# Documentation MCP Server Toolkit – User Guide
 
 ## Introduction
 
-Welcome to the **Automated Documentation Generation Toolkit User Guide**. This comprehensive guide is designed to help you seamlessly set up, configure, and operate the toolkit for automating code documentation in your projects. Whether you're adopting documentation automation for the first time or fine-tuning its integration within your team, this guide walks you through the essentials, advanced workflows, troubleshooting, and best practices to ensure high-quality, maintainable documentation with minimal effort. 
+Welcome to the **Documentation MCP Server Toolkit**! This user guide is your comprehensive companion to installing, configuring, and operating the toolkit for AI-powered documentation automation. Whether you're a developer aiming to streamline your code documentation, a technical writer seeking robust automation, or an AI assistant user looking to interact with repository artifacts, you'll find clear, practical steps here. The guide walks through initial setup, basic and advanced workflows, common troubleshooting tips, and best practices to ensure you can generate, maintain, and query technical documentation with confidence and efficiency.
 
-The guide is structured in two main parts:
-1. **Getting Started** – Step-by-step setup, configuration, and first-time usage instructions.
-2. **User Workflows** – Detailed workflows and advanced operations for ongoing documentation management.
-
-Let’s begin by installing and setting up the toolkit.
+Let’s get started—by the end of this guide, you’ll be equipped to generate and manage rich documentation for your projects using the capabilities provided by the Documentation MCP Server Toolkit.
 
 ---
 
 ## Getting Started
 
-This Getting Started guide will walk you through installing the Automated Documentation Generation Toolkit, configuring it for your codebase, and running your first documentation pipeline. Whether you're automating docs for the first time or evaluating integration with your team's workflow, this section provides the essential steps and common first tasks.
+This section will guide you through installation, initial configuration, basic usage, and common first steps to begin automating and exploring your software documentation with AI.
 
 ### 1. Installation
 
-#### Requirements
+#### Prerequisites
 
-- **Python 3.9+** (recommended: 3.10 or higher)
-- **pip** (Python package manager)
-- **Internet connection** (required for LLM API access)
-- **Unix/MacOS/Windows** environments supported
+Before installing, ensure you have the following:
+- **Python 3.8+** (Python 3.10 or later recommended)
+- **Git** (for repository cloning)
+- An API key for your chosen LLM provider (OpenAI, Anthropic, or Azure OpenAI)
+- **VS Code** (optional, for IDE integration)
 
-#### Step-by-Step Installation
+#### Clone the Repository
 
-1. **Clone the Repository:**
-   ```bash
-   git clone https://github.com/aronweiler/code-documentor.git
-   cd code-documentor
-   ```
+Start by cloning the toolkit to your local environment:
 
-2. **(Optional) Create a Virtual Environment:**
-   ```bash
-   python3 -m venv venv
-   source venv/bin/activate        # On Windows: venv\Scripts\activate
-   ```
+```bash
+git clone https://github.com/your-org/code-documentor.git
+cd code-documentor
+```
 
-3. **Install Python Dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-   > _Note: Requirements include OpenAI, Anthropic, tiktoken, pyyaml, python-dotenv, pydantic, and others._
+#### Set Up a Python Virtual Environment
+
+**On macOS/Linux:**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+**On Windows:**
+```cmd
+python -m venv venv
+venv\Scripts\activate
+```
+
+#### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+This will pull in all necessary libraries, including those for LLM connectivity and project automation.
 
 ---
 
 ### 2. Initial Setup & Configuration
 
-#### Prepare Your API Keys
+#### LLM Provider Setup
 
-Obtain API keys for your preferred LLM provider(s):
+Obtain an API key for your chosen LLM:
+- **OpenAI:** [Get an API key](https://platform.openai.com/account/api-keys)
+- **Anthropic:** [Request access](https://www.anthropic.com/)
+- **Azure OpenAI:** Create resources and retrieve keys via Azure Portal
 
-- Sign up with [OpenAI](https://platform.openai.com/), [Anthropic](https://console.anthropic.com/), or Azure OpenAI.
-- Copy your API keys; you’ll need them for the next step.
+#### Configure Environment Variables
 
-#### Configure with `.env` and `config.yaml`
+Set your API key as an environment variable (recommended for security):
 
-1. **Create a `.env` File:**
+```bash
+export OPENAI_API_KEY="your-openai-key"
+```
 
-   In the project root, add your secret keys, for example:
-   ```
-   OPENAI_API_KEY=sk-...
-   ANTHROPIC_API_KEY=your-anthropic-key
-   # If using Azure OpenAI:
-   AZURE_OPENAI_API_KEY=azure-key
-   AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-   AZURE_OPENAI_DEPLOYMENT=your-deployment
-   ```
-   > _Only the relevant keys for your chosen provider are required._
+Configure other variables according to your setup as documented in `src/config.py`.
 
-2. **Configure `config.yaml`:**
+#### Review and Edit Configuration (Optional)
 
-   Copy the provided template to configure your project settings:
-   ```bash
-   cp config.example.yaml config.yaml
-   ```
-   Edit `config.yaml` to match your repository and LLM usage. Example:
-   ```yaml
-   repo_path: ./my_project
-   llm_provider: openai
-   llm_model: gpt-4-1106-preview
-   output_dir: ./docs_output
-   file_extensions: [.py, .js, .ts]
-   exclude_dirs: [venv, tests]
-   documentation_guide:
-     enabled: true
-   design_document:
-     enabled: true
-   ```
-   > _For detailed config options, refer to the comments in `config.example.yaml` or see the [Configuration Reference](config_documentation.md)._
+`config.yaml` defines operational settings such as:
+- LLM provider and model (e.g., 'gpt-4', 'claude-3')
+- File inclusion/exclusion patterns
+- Guide and documentation output behavior
 
-3. **(Optional) Validate Your Configuration:**
-   ```bash
-   python main.py validate-config
-   ```
-   This checks for required fields and API access, ensuring your setup is ready.
+Default settings suffice for most; customize for large projects or specific needs.
+
+Example excerpt:
+```yaml
+llm:
+  provider: openai
+  model: gpt-4
+  api_key_env: OPENAI_API_KEY
+doc:
+  include:
+    - src/**/*.py
+  exclude:
+    - tests/*
+```
 
 ---
 
 ### 3. Basic Usage Examples
 
-Now that your toolkit is configured, you’re ready to generate project documentation and analyze your repository:
+Perform common documentation operations with these commands:
 
-#### Generate Documentation for Your Repository
+#### Generate Documentation and Guide
 
-Run the toolkit’s main documentation generation command:
 ```bash
-python main.py generate
+python main.py generate --repo-path /path/to/your/repository --guide
+```
+- Scans the codebase, generates Markdown docs, and builds a comprehensive `documentation_guide.md`.
+
+##### Incremental Generation
+
+Subsequent runs update only changed or new files:
+
+```bash
+python main.py generate --repo-path /path/to/your/repository --guide
 ```
 
-- All steps—repository scan, file-level doc generation, design doc/guide, and summary report—are handled automatically.
-- Results appear under the `output_dir` you set in config (e.g., `./documentation_output/`).
-- If you rerun the command, only changed or new files will be (re)documented by default.
+##### Include Design Documentation
+
+Generate a design doc alongside:
+
+```bash
+python main.py generate --repo-path /path/to/your/repository --guide --design
+```
+
+#### Clean Up Orphaned Docs
+
+Remove documentation for deleted/moved files:
+
+```bash
+python main.py generate --repo-path /path/to/your/repository --cleanup
+```
 
 #### Analyze Repository Structure
 
-Optionally, to get a summary of your codebase before generating docs:
+Preview which files will be included in documentation:
+
 ```bash
-python main.py analyze
+python main.py analyze --repo-path /path/to/your/repository
 ```
-This prints a report of file counts, types, and directory breakdowns.
+
+#### Validate Configuration
+
+Check for configuration or environment errors:
+
+```bash
+python main.py validate --repo-path /path/to/your/repository
+```
 
 ---
 
-### 4. Common First Tasks
+### 4. Using the Documentation MCP Server
 
-Get the most out of the toolkit by leveraging its automation and customization features:
+To access AI-powered endpoints for file discovery and queries, start the MCP Server:
 
-- **Document Only Changed Files (Incremental Mode):**  
-  By default, the toolkit skips unchanged files to save time and API costs. To force re-documentation, clear the metadata or output directory.
+```bash
+python mcp_server.py /path/to/your/repository
+```
 
-- **Generate a Project Documentation Guide:**  
-  Enabled via `documentation_guide: enabled: true`. After the pipeline runs, find `documentation_guide.md` in your output directory for high-level summaries and navigation.
+**Alternative method using environment variable:**
+```bash
+export DOCUMENTATION_REPO_PATH=/path/to/your/repository
+python mcp_server.py
+```
 
-- **Create a Design Document:**  
-  When `design_document: enabled: true` is set, the toolkit generates an LLM-based design/architecture markdown document, ideal for onboarding and codebase reviews.
-
-- **Review Output and Reports:**  
-  Explore per-file Markdown docs, consolidated guides and design docs, and summary reports for coverage and error diagnostics.
+**Integrate with VS Code:**
+- Install the extension (if available).
+- Add a suitable configuration to `.vscode/settings.json` or `.vscode/tasks.json` as shown in the previous section for one-click operations.
 
 ---
 
-### 5. Troubleshooting and Tips
+### 5. Common First Tasks
 
-- _Invalid API Keys_: Double-check your `.env` configuration.
-- _Missing Dependencies_: Rerun `pip install -r requirements.txt`.
-- _Large Files/Summaries_: The toolkit chunks or summarizes as needed; review reports for warnings or truncation.
-- **Verbose Mode:** Use `--verbose` for detailed logs.
-- **Help Menu:**  
+- **Generate docs for a fresh repo:**
   ```bash
-  python main.py --help
-  python main.py generate --help
+  python main.py generate --repo-path /path/to/your/repository --guide
   ```
+- **Clean up after code changes:**
+  ```bash
+  python main.py generate --repo-path /path/to/your/repository --cleanup
+  ```
+- **Integrate with VS Code for streamlined workflow.**
+- **Use the MCP Inspector tool for interactive server exploration.**
 
 ---
 
-### 6. Next Steps
+### 6. Troubleshooting & Next Steps
 
-- Customize prompts, code scanning rules, or output templates to fit your standards.
-- Integrate with CI/CD pipelines for continuous, automatic documentation updates.
-- Experiment with advanced configuration for new LLM providers or documentation templates.
+- **Dependency Errors:** Ensure your virtual environment is active and all dependencies are installed.
+- **LLM API Issues:** Double-check API keys, provider choice, and quota.
+- **Missing Files or Docs:** Run the generator and validate configuration.
+- **For advanced tasks and integration, refer to the full user guide or project README.md.**
 
----
-
-You are now prepared to automate documentation across your codebase with confidence! To dive deeper into advanced features and configuration options, consult the `/docs` directory or [Documentation Guide](documentation_guide.md).
+With this foundation, you're ready to fully leverage automated, AI-augmented documentation in your workflow.
 
 ---
 
 ## User Workflows
 
-Having set up the toolkit, you’re ready to dive into common workflows. This section provides actionable, step-by-step instructions for using the toolkit effectively, addressing typical scenarios, troubleshooting, and extending functionality.
+Efficient documentation depends on well-defined workflows. This section outlines step-by-step processes and best practices for typical usage scenarios with the Documentation MCP Server Toolkit.
+
+### 1. Generating Documentation for a Repository
+
+**Goal:** Produce file-level documentation and a comprehensive project guide—or even a design doc—with minimal effort.
+
+#### Steps:
+
+1. **Prepare Environment** — Confirm Python, dependencies, and LLM credentials.
+2. **Generate Docs**:
+   ```bash
+   python main.py generate --repo-path /path/to/your/repository --guide
+   ```
+   Optionally, add `--design` to include a design document.
+
+3. **Review Outputs** in `documentation_output/`.
+
+**Troubleshooting tips** are included for common errors such as missing output or LLM API issues.
 
 ---
 
-### 1. Generating Documentation for a Codebase
+### 2. Incremental Documentation & Updates
 
-To generate documentation for your project:
+Keep documentation current without reprocessing all files:
 
-1. **Ensure Initial Setup**
-   - Complete the [Getting Started](#getting_started) steps.
-2. **Validate Configuration (Optional)**
-   - Run `python main.py validate-config` to check connectivity and settings.
-3. **Run the Documentation Generator**
-   - Execute `python main.py generate`.
-   - The process analyzes your repo, generates LLM-based docs, and outputs Markdown files, a design document, a documentation guide (if enabled), and a summary report.
-4. **Check the Output**
-   - Outputs are organized within your `output_dir`, e.g.:
-     ```
-     documentation_output/
-     ├── src/
-     │   ├── code_analyzer_documentation.md
-     │   └── ...
-     ├── documentation_guide.md
-     ├── design_document.md
-     └── documentation_report.md
-     ```
-**Best Practices:** Commit config and output docs to version control and schedule regular CI/CD runs.
+1. **Modify or add source files** as usual.
+2. **Regenerate documentation**; only changed files and the guide are updated:
+   ```bash
+   python main.py generate --repo-path /path/to/repository --guide
+   ```
+
+**Best Practice:** Commit docs before and after regeneration for traceability.
 
 ---
 
-### 2. Incremental Documentation Updates
+### 3. Cleaning Up Orphaned Documentation
 
-The toolkit records metadata to detect changes, ensuring only new or modified files are (re)documented, thereby saving time and API usage.
+Remove docs for files no longer present:
 
-**How To:**
-- Edit/add source files as normal.
-- Rerun `python main.py generate`. Only changed/new files are processed.
-- Review the summary report for a breakdown of processed files.
-- _To force a full rebuild, clear the output directory or delete hash metadata._
-
----
-
-### 3. Reviewing and Using Generated Documentation
-
-- Outputs (Markdown docs, guides, reports) are found in your chosen output directory, mirroring your source structure.
-- The documentation guide provides an indexed summary for easy navigation.
-- The design document is ideal for architecture review and team onboarding.
-
-**Tip:** Import Markdown outputs into wiki/collaboration tools for wider team access.
+1. **Remove files** from your repo.
+2. **Run cleanup:**
+   ```bash
+   python main.py generate --repo-path /path/to/repository --cleanup
+   ```
 
 ---
 
-### 4. Customizing the Pipeline and Configuration
+### 4. Analyzing Repository Structure
 
-To tailor the documentation process:
-
-- Edit `config.yaml` for LLM settings, output paths, file types, and generation options.
-- Adjust `.env` to switch LLM providers or set credentials as your needs change.
-- After updating settings, rerun the generator for updated output.
-
-**Sample Configuration Snippet:**
-```yaml
-file_extensions: [.py, .js]
-exclude_dirs: [venv, tests]
-documentation_guide:
-  enabled: true
-design_document:
-  enabled: false
-```
-
-_Best practice: test configuration changes on a small subset first._
-
----
-
-### 5. Repository Analysis Without Documentation Generation
-
-For a quick audit of your codebase’s structure, use:
+Preview and verify which files will be documented:
 
 ```bash
-python main.py analyze
+python main.py analyze --repo-path /path/to/repository
 ```
-This produces a summary of file counts, types, and directory breakdowns. No documentation is generated or altered.
+
+Confirm config patterns cover the relevant files before generating docs.
 
 ---
 
-### 6. Troubleshooting and Common Issues
+### 5. Validating Configuration
 
-| Symptom                        | Solution                                                            |
-|---------------------------------|---------------------------------------------------------------------|
-| Invalid API key/error           | Check `.env` for correct keys and provider access                   |
-| No docs generated for some files| Check `exclude_dirs` and `file_extensions` in `config.yaml`         |
-| Documentation is truncated      | Toolkit auto-chunks/continues output; check reports for warnings    |
-| Excessive API usage/cost        | Use incremental runs, exclude 3rd-party/large files                 |
-| CLI errors with config          | Run `python main.py validate-config` to identify issues             |
-| Changed files not documented    | Ensure hash metadata and outputs are not stale; clear if necessary  |
+Catch issues before a big documentation run:
 
-More detailed solutions and advice are available in the documentation guide.
+```bash
+python main.py validate --repo-path /path/to/repository
+```
+
+This checks API credentials, file patterns, and integration settings.
 
 ---
 
-### 7. Best Practices
+### 6. Using the Documentation MCP Server (Interactive & AI Queries)
 
-- Integrate doc generation with your CI for up-to-date documentation.
-- Regularly review summary reports for errors or skipped files.
-- Securely handle credentials, especially in CI environments.
-- Exclude non-essential directories to avoid unnecessary costs and clutter.
-- Advanced users: tailor prompt templates in `src/prompts/` for custom documentation styles.
+Deploy the backend server to enable smart file and feature queries:
 
----
+```bash
+python mcp_server.py /path/to/your/repository
+```
 
-### 8. Advanced Usage
-
-- **Force a Full Rebuild:**  
-  Remove the output directory and rerun the generator:
-  ```bash
-  rm -rf documentation_output/
-  python main.py generate
-  ```
-- **Verbose Output:**  
-  Add `--verbose` to commands for deeper debugging.
-  ```bash
-  python main.py generate --verbose
-  ```
-- **Selective Documentation:**  
-  Limit file extensions or directories in your config to target specific project sections.
+Try MCP CLI tools or integrate with editors and desktop AI tools for natural language documentation search and discovery.
 
 ---
 
-### 9. Example: End-to-End Workflow
+### 7. Common Troubleshooting Scenarios
 
-1. Clone the repository and install dependencies.
-2. Configure `.env` with API keys.
-3. Copy and edit `config.yaml`.
-4. Run `python main.py validate-config`.
-5. Run `python main.py generate`.
-6. Review generated documentation in `documentation_output/`.
-7. Address issues and iterate as needed.
+A table is provided for rapid issue diagnosis and solution referencing, covering module errors, integration pitfalls, API issues, and permission conflicts.
 
 ---
 
-### 10. Getting Help
+### 8. Best Practices
 
-- Use `python main.py --help` for CLI options and usage.
-- Check generated reports for feedback and diagnostics.
-- Refer to the [Documentation Guide](documentation_guide.md) or the project README for additional details and advanced usage.
-- For unresolved issues, consider raising an issue in the project repository.
+- **Run incrementally:** After source changes, especially merges or refactors.
+- **Version documentation:** Keep generated docs in source control.
+- **Secure credentials:** Use environment variables, never hardcode!
+- **Automate tasks:** Use scripts or IDE tasks for reliability and speed.
+
+---
+
+### 9. Example Workflow: First Run to AI Query
+
+1. Clone your repo.
+2. Set environment and install dependencies.
+3. (Optional) Edit `config.yaml`.
+4. Generate documentation:
+   ```bash
+   python main.py generate --repo-path . --guide
+   ```
+5. Clean up old documentation:
+   ```bash
+   python main.py generate --repo-path . --cleanup
+   ```
+6. Start the server for AI/IDE integration:
+   ```bash
+   python mcp_server.py .
+   ```
+7. Query via CLI/editor for features or relevant files.
+
+**Result:** Up-to-date, queryable documentation, ready for developer and AI assistant use.
 
 ---
 
 ## Conclusion
 
-By following this guide, you are equipped to automate, review, and maintain robust documentation for your codebase—streamlining onboarding, audits, and ongoing development. For more advanced configurations, troubleshooting, or customization, consult the documentation guide or explore files under `/docs`. 
+With the Documentation MCP Server Toolkit, you can rapidly deploy and maintain automated, high-quality documentation pipelines tailored for both human readers and AI agents. By following the workflows and best practices outlined in this guide, your projects gain reliable, discoverable, and always-current documentation with minimal manual effort.
 
-With the Automated Documentation Generation Toolkit, high-quality documentation is always within reach. Happy documenting!
+For further reference, consult the [Implementation Details](#implementation-details), [Troubleshooting](#troubleshooting), or browse the project’s README.md.
+
+Start automating your documentation process today, and unlock new levels of productivity and insight for your development teams and toolchains!

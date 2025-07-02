@@ -1,194 +1,330 @@
 <!-- AUTO-GENERATED DESIGN DOCUMENT -->
-<!-- Generated on: 2025-06-11T10:57:06.842589 -->
+<!-- Generated on: 2025-07-01T23:09:44.522669 -->
 <!-- Document: architecture -->
 
-# Automated Documentation Generation Toolkit: Architecture Overview
+# Documentation MCP Server Architecture
 
 ## Introduction
 
-The increasing complexity of modern codebases has made up-to-date documentation more vital—and more challenging—than ever before. The Automated Documentation Generation Toolkit is designed to address this challenge by providing a modular, extensible pipeline that employs advanced code analysis, context management, and large language models (LLMs) to produce high-quality, comprehensive documentation with minimal manual intervention. This document details the architectural foundations of the toolkit, its major components, data flows, design patterns, technology choices, and the interactions that power its functionality.
+Automated, reliable, and up-to-date documentation is a cornerstone of effective software engineering, yet generating and maintaining it at scale is a perennial challenge. The Documentation MCP Server addresses this challenge by orchestrating powerful AI models and extensible automation pipelines to analyze, generate, and present rich documentation artifacts for code repositories. Designed with modularity, extensibility, and security in mind, the system seamlessly integrates with modern developer tools and workflows, providing both human users and AI assistants with deep insight into codebases.
+
+This document presents a comprehensive architecture for the Documentation MCP Server. It begins with a high-level overview of the system and its key patterns, then explores the components and their relationships, provides details on major modules, and summarizes integration points, output mechanisms, and extensible capabilities.
 
 ---
 
-## High-Level System Architecture
+## System Overview
 
-At its core, the Automated Documentation Generation Toolkit is organized as a composable, command-line driven pipeline. This architecture ensures each subsystem has a clear and narrowly scoped responsibility, supporting both flexibility and maintainability. The following overview details the primary components and their roles within the system:
+### High-Level Architecture
 
-### Core System Components
+The Documentation MCP Server is architected as a modular, extensible system designed to automate documentation generation, analysis, and exploration for source code repositories. Its architecture blends state-of-the-art AI model orchestration with robust, developer-friendly tooling and secure, configurable components. This section provides a comprehensive overview of the system’s primary components, their interactions, typical data flow, core architectural patterns, and the underlying technology stack.
 
-1. **Command-Line Interface (CLI) – `main.py`**
-   - Serves as the main user-facing entry point, orchestrating configuration loading and dispatching operations to pipeline components via subcommands.
-2. **Configuration Manager – `src/config.py`**
-   - Centralizes configuration from YAML and environment files, exposing settings and secrets across the pipeline.
-3. **Repository & Code Analyzer – `src/code_analyzer.py`**
-   - Discovers, classifies, and aggregates source file metadata for subsequent analysis.
-4. **Document Processor – `src/document_processor.py`**
-   - Manages the loading, tokenization, chunking, and summarization of code and documentation files.
-5. **Context Manager – `src/context_manager.py`**
-   - Aggregates and summarizes documentation context to enable effective LLM prompting.
-6. **LLM Manager – `src/llm_manager.py`**
-   - Abstracts interaction with multiple LLM providers, handling client instantiation and configuration.
-7. **Design & Guide Generators – `src/design_document_generator.py`, `src/guide_generator.py`**
-   - Generate structured design documents and documentation guides through iterative LLM-powered procedures.
-8. **File Processor & Report Generator – `src/file_processor.py`, `src/report_generator.py`**
-   - Manages incremental file processing and assembles outputs into detailed summary reports.
-9. **Pipeline Controller – `src/pipeline.py`, `src/state_manager.py`**
-   - Orchestrates the multi-step workflow, encapsulating stepwise logic and state management.
-10. **Supporting Utilities**
-    - Provides tokenization, prompt templating, and file access primitives.
-11. **Data Models – `src/models.py`**
-    - Encapsulates schema definitions for consistent data interchange between components.
+---
 
-#### System Diagram
+### System Components and Relationships
+
+The solution is composed of several interacting modules, each with clear responsibilities. The following summarizes the key components:
+
+1. **Command-Line Interface (CLI) & Entry Points**  
+   Main scripts serve as user entry points for documentation generation, cleanup, analysis, and starting the server API.
+
+2. **MCP Server**  
+   Implements service endpoints for natural language interactions with documentation. It coordinates internal managers and handles integration.
+
+3. **Pipeline and Orchestrators**  
+   Coordinates overall workflow (via LangGraph), manages state, and orchestrates each documentation run.
+
+4. **Core Managers**  
+   Provide modular management of configuration, language model orchestration, and workflow control.
+
+5. **Domain Modules and Utilities**  
+   Handle code analysis, intelligent document/file processing, incremental metadata tracking, and guide/design doc generation.
+
+6. **Prompt and Tool Modules**  
+   Centralize LLM prompts and provide tools for secure, repo-scoped file operations.
+
+7. **Data Models and State**  
+   Strongly-typed Pydantic schemas capture configuration, workflow state, metadata, and results, ensuring reliable operation and clear contracts.
+
+8. **Output and Reporting**  
+   Manages the generation of Markdown documentation artifacts, reports, and logs.
+
+---
+
+#### Mermaid System Architecture Diagram
+
 ```mermaid
 flowchart TD
-    CLI["CLI (main.py)"]
-    Config["Configuration Manager"]
-    Pipeline["Pipeline Controller"]
-    Analyzer["Repository & Code Analyzer"]
-    DocProc["Document Processor"]
-    CtxMgr["Context Manager"]
-    LLM["LLM Manager"]
-    GenDesign["Design & Guide Generators"]
-    FProc["File Processor"]
-    Report["Report Generator"]
-    Models["Data Models / State"]
+    subgraph Client Interfaces
+        CLI["main.py (CLI)"]
+        VSCode["VS Code / Claude Integration"]
+        MCPAPI["MCP Protocol / HTTP"]
+    end
 
-    CLI --> Config
+    subgraph MCP Server
+        Server["mcp_server.py"]
+        MCPManager["MCPManager (LangGraph workflows)"]
+    end
+
+    subgraph Core Pipeline
+        Pipeline["DocumentationPipeline (LangGraph)"]
+        StateManager["StateManager"]
+    end
+
+    subgraph Managers & Utilities
+        CodeAnalyzer["CodeAnalyzer"]
+        FileProcessor["FileProcessor"]
+        DocumentProcessor["DocumentProcessor"]
+        GuideGenerator["GuideGenerator"]
+        GuideMeta["GuideMetadataManager"]
+        DesignDocGen["DesignDocumentGenerator"]
+        LLMManager["LLMManager"]
+        ConfigManager["ConfigManager"]
+        TokenManager["TokenManager"]
+    end
+
+    subgraph Data & Outputs
+        Repo["Source Repository"]
+        DocsOut["documentation_output/"]
+        Guide["documentation_guide.md"]
+        DesignDocs["design_documentation/"]
+        Reports["Reports / Logs"]
+    end
+
     CLI --> Pipeline
-    Config -->|Settings| Pipeline
-    Models -->|Schema| Pipeline
+    VSCode --> Server
+    MCPAPI --> Server
+    Server --> MCPManager
+    MCPManager --> Pipeline
 
-    Pipeline --> Analyzer
-    Pipeline --> DocProc
-    Pipeline --> CtxMgr
-    Pipeline --> LLM
-    Pipeline --> GenDesign
-    Pipeline --> FProc
-    Pipeline --> Report
+    Pipeline -->|Controls| StateManager
+    StateManager -->|Orchestrates| CodeAnalyzer
+    StateManager --> FileProcessor
+    StateManager --> DocumentProcessor
+    StateManager --> GuideGenerator
+    GuideGenerator --> GuideMeta
+    Pipeline --> DesignDocGen
 
-    Analyzer -->|File metadata| DocProc
-    DocProc -->|Chunked data| CtxMgr
-    CtxMgr -->|Aggregated context| GenDesign
-    LLM -->|LLM Client| GenDesign
-    GenDesign -->|Design docs, guides| FProc
-    FProc -->|Documentation files| Report
+    Pipeline --> ConfigManager
+    Pipeline --> LLMManager
+    LLMManager -->|Uses| TokenManager
+
+    CodeAnalyzer -->|Scans| Repo
+    FileProcessor -->|Reads/Writes| Repo
+    DocumentProcessor --> DocsOut
+    GuideGenerator --> Guide
+    DesignDocGen --> DesignDocs
+
+    Pipeline --> Reports
+    Server -->|Serves| DocsOut
 ```
 
 ---
 
-## Data Flow Between Components
+### Data Flow Summary
 
-The overall workflow is structured as a sequence of tightly integrated stages, ensuring efficient execution with minimal redundancy:
+The system follows a well-defined, multi-stage data processing pipeline:
 
-1. **Initialization & Configuration**
-   - User interaction with the CLI triggers configuration setup and pipeline initialization.
-2. **Repository Analysis**
-   - The Code Analyzer inspects project structure, creating a catalog of source files and metadata.
-3. **Document Processing**
-   - Document Processor loads and prepares documentation and code for further handling, managing tokenization and chunking.
-4. **Context Building & Summarization**
-   - Context Manager synthesizes all relevant information into an LLM-ready context, summarizing as needed.
-5. **LLM-Based Documentation Generation**
-   - LLM Manager provisions an appropriate model; design and guide generators prompt the LLM for new documentation.
-6. **Incremental File Processing**
-   - File Processor selectively generates docs for modified/new files based on content hashes.
-7. **Reporting and Output Assembly**
-   - Generated outputs are persisted; Report Generator compiles summary reports and indexes.
-8. **Pipeline Orchestration**
-   - State and intermediate results are tracked throughout by centralized pipeline controllers.
+1. **Input & Configuration:**  
+   Users interact via CLI commands or MCP API requests. Configuration is loaded and validated.
 
----
+2. **Repository Analysis:**  
+   CodeAnalyzer scans source files and produces metadata needed for downstream processing.
 
-## Architectural Patterns
+3. **Documentation Orchestration:**  
+   DocumentationPipeline, powered by LangGraph and managed state, delegates file processing, triggering LLM-based summaries or documentation generation.
 
-The toolkit’s robustness and adaptability derive from several key architectural patterns:
+4. **Large Language Model Interaction:**  
+   LLMManager instantiates the requested LLM provider; prompts and context are supplied, and text is generated and validated.
 
-- **Modular Pipeline:** Each component is independently replaceable and testable.
-- **State Machine Controller:** Pipeline progress and branching are governed centrally by a state machine.
-- **Adapter Pattern for LLMs:** Uniform interfaces abstract away specifics of each LLM provider.
-- **File-Based Incrementality:** Content hashes track file changes, enabling efficient regeneration.
-- **Configuration-Driven Execution:** YAML and environment configurations drive behavior, reducing code modifications for new deployments.
+5. **Artifact Generation:**  
+   Processed outputs are written per file (Markdown), with high-level guides and cohesive design docs generated as needed.
+
+6. **MCP Server & AI Integrations:**  
+   The server layer manages AI-powered exploration tools and returns structured results.
+
+7. **Output:**  
+   All generated content is saved and exposed for use in developer workflows, with detailed reporting for transparency.
 
 ---
 
-## Technology Stack Overview
+### Key Architectural Patterns
 
-| **Component**            | **Technology**                                                |
-|--------------------------|--------------------------------------------------------------|
-| Programming Language     | Python 3.x                                                   |
-| CLI & Orchestration      | Python argparse                                              |
-| LLM Integration          | OpenAI, Anthropic, Azure OpenAI (official SDKs)              |
-| Data Modeling            | Pydantic                                                     |
-| Data Serialization       | YAML (PyYAML), JSON                                          |
-| Env/Secret Management    | python-dotenv                                                |
-| Tokenization             | tiktoken (OpenAI), fallback word-based estimation            |
-| Markdown Generation      | String handling / markdown libraries                         |
-| File Handling            | Python pathlib, os                                           |
-| Testing & Extensibility  | Modular, importable components                               |
+- **Workflow Orchestration:**  
+  Orchestrates documentation and analysis tasks using stateful, node-based workflows.
+
+- **Manager Pattern:**  
+  Encapsulates core tasks (pipeline, config, LLM access, file/document handling) in well-defined managers for modularity and extensibility.
+
+- **Model-Driven Validation:**  
+  Employs rich Pydantic models for data integrity, validating all key entities and contracts.
+
+- **Plugin/Extension Readiness:**  
+  Modular design supports easy integration of new providers, pipelines, or prompts.
+
+- **Secure File Operations:**  
+  File and directory access is strictly controlled and validated for security.
+
+- **Incremental and Idempotent Processing:**  
+  Metadata-driven checks allow efficient incremental documentation and cleanup without redundant processing.
+
+---
+
+### Technology Stack Overview
+
+- **Python 3.x:** Main implementation language.
+- **LangChain & LangGraph:** Workflow and LLM integration.
+- **Pydantic:** Data validation and schema modeling.
+- **OpenAI & Anthropic (Claude):** LLM-powered text analysis and generation.
+- **tiktoken:** Token counting for LLM operations.
+- **YAML:** Human-friendly configuration.
+- **Virtualenv/Venv, requirements.txt:** Dependency and environment management.
+- **Markdown:** Output format for broad editor compatibility.
+- **VS Code Tasks, MCP Protocol:** For IDE/AI/CLI connectivity.
+- **Custom Security Utilities:** Restrict all repo operations to safe scopes.
+
+---
+
+### System Summary
+
+The Documentation MCP Server’s architecture combines robust, modular engineering with cutting-edge AI model workflows. Its manager-driven design, strong validation, and seamless IDE integrations enable maintainable, scalable, and incremental documentation across software projects. Through this foundation, both human teams and AI agents are empowered to achieve greater comprehension and maintain the high-quality documentation essential for modern development success.
 
 ---
 
 ## Component Details
 
-To provide clarity on responsibilities and integration, this section describes each subsystem’s API surface, supported data models, and connections to other modules.
-
-### 1. Command-Line Interface (CLI) – `main.py`
-
-Handles user interaction and dispatches control to the rest of the pipeline. The CLI offers subcommands for generating documentation, analyzing repositories, or validating configurations. Internally, it leverages the Configuration Manager for settings and launches appropriate workflow branches within the pipeline.
-
-### 2. Configuration Manager – `src/config.py`
-
-Serves as the single source of truth for toolkit configuration. It loads and validates settings (YAML, environment), making them accessible via a central API. Downstream consumers—such as the LLM Manager or code analysis stages—rely on this for consistent provider and parameter access.
-
-### 3. Repository & Code Analyzer – `src/code_analyzer.py`
-
-Discovers source files and code structure, producing a normalized list of files and metadata. This data informs which files will be processed, summarized, or skipped in subsequent stages.
-
-### 4. Document Processor – `src/document_processor.py`
-
-Manages the preparation of code and documentation for input into language models. Tokenization, chunking, and automated summarization ensure LLM prompts stay within provider limits, optimizing both cost and output quality.
-
-### 5. Context Manager – `src/context_manager.py`
-
-Aggregates all available content—existing documentation, code, and generated material—into a coherent context for LLM consumption. When documentation exceeds token thresholds, it employs summarization strategies to condense content efficiently.
-
-### 6. LLM Manager – `src/llm_manager.py`
-
-Abstracts specifics of LLM provider APIs, credential resolution, and client instantiation. All generator components interact with LLMs exclusively through this manager, guaranteeing a uniform, provider-agnostic interface.
-
-### 7. Design & Guide Generators  
-- **Design Document Generator:** Facilitates section-wise authoring of overarching design documents via LLM, handling retries and coherent assembly.
-- **Guide Generator:** Compiles generated documentation into human-friendly guides, summaries, and indexes, ready for project use.
-
-### 8. File Processor – `src/file_processor.py`
-
-Enables efficient incremental documentation through per-file hash tracking, writing, and directory structure management. It avoids redundant regeneration, persisting only modified or new outputs.
-
-### 9. Report Generator – `src/report_generator.py`
-
-Collates reporting outputs—summary statistics, per-file docs, index tables—at the culmination of the pipeline, providing both disk outputs and CLI feedback.
-
-### 10. Pipeline Controller – `src/pipeline.py`, `src/state_manager.py`
-
-Acts as the orchestrator for the entire workflow, managing state, deciding which steps or branches to execute, and ensuring that each stage’s results flow efficiently to the next.
-
-### 11. Supporting Utilities
-
-Include token management, safe file/directory operations, and reusable prompt modules. These ensure smooth functioning around core pipeline logic and maximize reliability.
-
-### 12. Data Models – `src/models.py`
-
-All inter-component data is defined and validated using Pydantic models, providing a well-typed substrate for exchanging configs, results, context, and states throughout the pipeline.
+To better understand the system’s robustness and extensibility, this section provides in-depth descriptions of the major components and their roles within the Documentation MCP Server architecture.
 
 ---
 
-## Component Interactions and Data Contracts
+### 1. Command-Line Entry Points
 
-The system’s composability depends on strict, schema-driven contracts—primarily realized via Pydantic models—across all major component boundaries. The centralized Configuration Manager ensures coherent setup, while the PipelineState object serves as the backbone for workflow progress and data sharing. This solid foundation enables straightforward extensibility (such as plugging in new LLM providers or file types) by simply extending or adapting Config Manager, LLM Manager, or generator modules without wholesale re-architecture.
+#### **main.py (CLI Interface)**
+- **Responsibilities:** User-facing entry point for orchestrating documentation tasks, including generation, analysis, validation, and cleanup. Parses CLI arguments, configures pipeline, and invokes orchestration layers.
+- **Interfaces/Usage:** Command-line arguments via `argparse`; used as:
+  ```
+  python main.py generate --repo-path /path/to/repo --cleanup
+  python main.py analyze --repo-path /path/to/repo
+  ```
+- **Integration:** Bootstraps configuration via ConfigManager and delegates execution to DocumentationPipeline.
+
+#### **mcp_server.py (MCP Server Entrypoint)**
+- **Responsibilities:** Runs the server for API-driven project exploration, exposing endpoints such as `get_relevant_files` and `understand_feature`.
+- **Interfaces:** Accepts repo path argument, listens for MCP requests, returns structured results.
+- **Integration:** Delegates AI-powered analysis to MCPManager; loads config via ConfigManager.
+
+---
+
+### 2. MCP Server Stack
+
+#### **MCPManager**
+- **Responsibilities:** Orchestrates LLM-powered tool requests, manages LangGraph workflows, and coordinates model interactions and contextual analysis.
+- **APIs:** Provides functions like `find_relevant_files` and `understand_feature`.
+- **Data Models:** Relies on specialized Pydantic schemas for state and result validation.
+- **Integration:** Connects with LLMManager, GuideGenerator, and utility modules.
+
+---
+
+### 3. Documentation Pipeline Orchestration
+
+#### **DocumentationPipeline**
+- **Responsibilities:** Central orchestrator for all documentation, guide, and design doc generation, managing a LangGraph-driven workflow with explicit state handling.
+- **Interfaces:** Invoked programmatically with repository details and pipeline config.
+- **Integration:** Coordinates domain-specific modules (CodeAnalyzer, FileProcessor, etc.) via StateManager.
+
+#### **StateManager**
+- **Responsibilities:** Manages branching and state transitions based on workflow logic (when to process, skip, summarize, etc.).
+- **Interfaces:** Maintains and mutates pipeline state; used by DocumentationPipeline.
+
+---
+
+### 4. Core Managers and Utilities
+
+#### **CodeAnalyzer**
+- **Responsibilities:** Scans repositories for relevant code, applying inclusion/exclusion rules, generating file lists and metadata.
+- **APIs/Data Models:** Produces lists of CodeFile objects.
+
+#### **FileProcessor**
+- **Responsibilities:** Handles secure reading/writing, change detection, hash-based incremental document generation.
+- **Integration:** Serves the pipeline by efficiently persisting or updating docs.
+
+#### **DocumentProcessor**
+- **Responsibilities:** Loads documentation text, performs chunking and token counting for LLM context constraints.
+
+#### **GuideGenerator & GuideMetadataManager**
+- **Responsibilities:** Generates high-level Markdown documentation guides; tracks metadata for incremental updates.
+
+#### **DesignDocumentGenerator**
+- **Responsibilities:** Produces cohesive, structured multi-section design docs through iterative LLM prompting and context assembly.
+
+#### **ConfigManager**
+- **Responsibilities:** Loads, validates, and provides runtime configuration and credentials.
+
+#### **LLMManager**
+- **Responsibilities:** Abstracts language model initialization (OpenAI, Anthropic, Azure), configures models per runtime/environment settings.
+
+#### **ReportGenerator**
+- **Responsibilities:** Aggregates and persists reports on process outcomes (success, failure, skips).
+
+---
+
+### 5. Prompt and Tool Modules
+
+#### **Prompt Files**
+- **Responsibilities:** Core library for system prompt/message templates, ensuring consistency across LLM-driven workflows.
+
+#### **File Tools**
+- **Responsibilities:** Provide secure file/directory access, exposed to LLM agents as LangChain Tool objects for controlled operations.
+
+---
+
+### 6. Data Models and Schemas
+
+#### **Pydantic Core Models**
+- **Responsibilities:** Define the strong data contracts for all system entities—configuration, metadata, requests, results—ensuring type safety and reliability across all boundaries.
+
+---
+
+### 7. Outputs and Integration Points
+
+- **Documentation Artifacts:** Markdown files for files, guides, and design docs—stored in `documentation_output/`.
+- **Incremental Metadata:** Process/state metadata supports incremental reprocessing.
+- **Reporting & Logs:** Markdown and console logs track all actions and results.
+- **IDE & Editor Integration:** Seamless support for VS Code tasks/settings and AI desktop integrations.
+- **APIs and Protocols:** All analysis/documentation queries are exposed as MCP protocol endpoints with strong type validation.
+
+---
+
+### 8. Integration with LLM Providers
+
+- **Supported Providers:** OpenAI (GPT-4/GPT-3.5), Anthropic (Claude), Azure OpenAI.
+- **Security:** API keys managed via config or environment variables; references to models encapsulated in configuration for organizational flexibility.
+- **Extensibility:** Modular model/provider selection design enables future upgrades.
+
+---
+
+### Summary Table
+
+| Component                | Main Responsibilities                            | Input/Output                   | Key Integration Points                         |
+|--------------------------|--------------------------------------------------|-------------------------------|------------------------------------------------|
+| main.py                  | CLI parsing & pipeline entry                     | CLI args → Pipeline           | ConfigManager, DocumentationPipeline           |
+| mcp_server.py            | API server for MCP tools                         | MCP requests → JSON           | MCPManager, ConfigManager                      |
+| DocumentationPipeline    | Workflow orchestrator (LangGraph)                | Config, repo → docs/files     | StateManager, File/Guide/Design Generators     |
+| MCPManager               | AI-powered analysis tools for server             | Tool requests → analysis      | LLMManager, pipeline managers                  |
+| CodeAnalyzer             | Codebase scanning & metadata                     | Source files → CodeFile list  | FileProcessor, GuideGenerator                  |
+| FileProcessor            | File read/write & change detection               | Files ←→ doc/metadata         | Main pipeline, design/guide generators         |
+| GuideGenerator + Meta    | Guide aggregation, summary, incremental updates  | Files/Meta → guide.md         | DocumentProcessor, FileProcessor               |
+| DesignDocumentGenerator  | Multi-section design doc assembly                | Guide/context → design.md     | LLMManager, pipeline orchestrator              |
+| ConfigManager            | Configuration, credential management             | YAML/env → runtime config     | All orchestrators                              |
+| LLMManager               | Model selection & instantiation                  | config → LLM instance         | MCPManager, pipeline, design doc               |
+| Prompt Modules           | Reusable LLM prompt templates                    | (internal use)                | All components needing prompt text             |
+| Tool Modules             | Secure file/content queries for the LLM          | repo path → fileops           | LLM agents/workflows, MCPServer                |
+| Models/Schemas           | Pydantic-type contracts for all data             | (internal use)                | All major modules and APIs                     |
+| ReportGenerator          | End-of-run summary reporting                     | Process state → reports       | Main pipeline, CLI output                      |
 
 ---
 
 ## Conclusion
 
-The Automated Documentation Generation Toolkit exemplifies robust architectural principles: clear separation of concerns, modular pipeline design, extensibility via data modeling, and resilience to evolving requirements in documentation automation. By integrating state-of-the-art LLMs, token-aware context management, and efficient orchestration, it empowers engineering teams to maintain comprehensive, current, and useful documentation as codebases grow and change. Each subsystem interlocks cleanly to form an end-to-end solution that is both powerful out-of-the-box and readily adaptable to new use cases and technologies.
+Through its modular architecture, strong model-driven validation, and seamless language model integration, the Documentation MCP Server delivers a scalable and extensible solution for AI-powered codebase documentation. Each component is clearly delineated, designed for secure and efficient operations, and integrated through well-defined protocols and data schemas. This system supports both incremental updates and large-scale documentation initiatives, meeting the needs of modern software teams and their evolving ecosystems.
+
+By composing these tightly-integrated components, the Documentation MCP Server provides a solid foundation for both current and future requirements in intelligent, automated documentation generation and codebase exploration.

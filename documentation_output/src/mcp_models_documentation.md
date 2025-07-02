@@ -2,211 +2,176 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/mcp_models.py
+# Documentation for src\mcp_models.py
 
-# `src/mcp_models.py` Documentation
+# `mcp_models.py`
+
+> Models for MCP (Model Context Protocol) server operations.
+
+---
 
 ## Purpose
 
-This file defines the core [Pydantic](https://pydantic-docs.helpmanual.io/) data models used by an MCP (Model Context Protocol) server. These models are used for request and response structures as part of the server's key features, such as searching for relevant files and understanding codebase features. The file serves as a central place to define clear, validated schemas for communication and workflow state management in the MCP system.
+This file defines the main data structures (using Pydantic models) that describe the requests, responses, and internal workflow state for the MCP server. The MCP server is focused on programmatically analyzing and understanding source code repositories, surfacing relevant files, and documenting features via language models.
+
+These models ensure typed, validated, and well-structured information is passed between different parts of the MCP system, such as the API endpoints, LLM (large language model) integrations, and documentation pipelines.
 
 ---
 
 ## Functionality
 
-The file provides structured representations for the following operations:
+The file provides models for:
 
-- **Relevant Files Search**: Models for querying and returning relevant files from a codebase.
-- **Feature Understanding**: Models for querying and generating comprehensive information about specific features or components.
-- **Documentation Handling**: Models for handling loaded documentation files.
-- **Workflow State Management**: A model for representing the end-to-end state of a request/response flow within the MCP, supporting integration with tools like LangGraph.
+- Requesting and returning relevant files in a repository.
+- Requesting feature understanding and returning a comprehensive answer, key components, and related info.
+- Managing the state of an ongoing MCP operation, such as tracking which documentation files have been discovered, loaded, or processed.
+- Handling errors and organizing analysis pipeline data.
 
-Each model is implemented as a Pydantic `BaseModel` for validation, conversion, and improved developer ergonomics.
+All models extend `pydantic.BaseModel`, providing serialization, validation, and default value support.
 
 ---
 
 ## Key Components
 
-### Classes
+### 1. **MCPFileResult**
+- **Purpose:** Represents a relevant file as determined by the MCP system, with attributes such as summary, relevance score, and optional explanation.
+- **Fields:**
+  - `file_path: str`
+  - `summary: str`
+  - `relevance_score: Optional[float]`
+  - `reasoning: Optional[str]`
 
-#### 1. `MCPFileResult`
-Represents a single relevant file found during file search operations.
+### 2. **MCPRelevantFilesRequest**
+- **Purpose:** Schema for requesting a set of relevant files based on a natural language description.
+- **Fields:**
+  - `description: str`
+  - `max_results: int` (default: 10)
+  - `include_test_files: bool` (default: False)
 
-- `file_path`: `str` — Path to the file.
-- `summary`: `str` — Short summary of file content or relevance.
-- `relevance_score`: `Optional[float]` — Relevance score (if calculated).
-- `reasoning`: `Optional[str]` — Justification for file's relevance.
+### 3. **MCPRelevantFilesResponse**
+- **Purpose:** Schema for the response which includes relevant files matching the request and summary statistics.
+- **Fields:**
+  - `query_description: str`
+  - `relevant_files: List[MCPFileResult]`
+  - `total_files_analyzed: int`
+  - `processing_time_seconds: Optional[float]`
 
-#### 2. `MCPRelevantFilesRequest`
-Structure of a request for relevant files.
+### 4. **MCPFeatureRequest**
+- **Purpose:** Used to request an in-depth understanding/documentation about a feature.
+- **Fields:**
+  - `feature_description: str`
+  - `include_implementation_details: bool` (default: True)
+  - `max_sections: int` (default: 5)
 
-- `description`: `str` — Description of what files to search for.
-- `max_results`: `int` (default: 10) — Maximum number of files to return.
-- `include_test_files`: `bool` (default: False) — Whether to include test files.
+### 5. **MCPDocumentationFile**
+- **Purpose:** Represents a documentation file loaded and parsed (successfully or not) during analysis.
+- **Fields:**
+  - `file_path: str`
+  - `content: str`
+  - `loaded_successfully: bool` (default: True)
+  - `error_message: Optional[str]`
 
-#### 3. `MCPRelevantFilesResponse`
-Response model listing results of the relevant files search.
+### 6. **MCPFeatureResponse**
+- **Purpose:** Encapsulates a comprehensive, LLM-driven answer about a software feature.
+- **Fields:**
+  - `feature_description: str`
+  - `comprehensive_answer: str`
+  - `key_components: List[str]`
+  - `implementation_details: str`
+  - `usage_examples: str`
+  - `related_concepts: List[str]`
+  - `source_documentation_files: List[str]`
 
-- `query_description`: `str` — Description used in the search query.
-- `relevant_files`: `List[MCPFileResult]` — List of matching files.
-- `total_files_analyzed`: `int` — Total files considered during search.
-- `processing_time_seconds`: `Optional[float]` — Time taken for processing.
-
-#### 4. `MCPFeatureRequest`
-Request model for generating documentation or understanding a feature.
-
-- `feature_description`: `str` — Description of the feature/component.
-- `include_implementation_details`: `bool` (default: True) — Whether to add implementation specifics.
-- `max_sections`: `int` (default: 5) — Limit on how many documentation sections to include.
-
-#### 5. `MCPDocumentationFile`
-Represents a loaded documentation file or artifact.
-
-- `file_path`: `str` — Path to the documentation file.
-- `content`: `str` — File contents.
-- `loaded_successfully`: `bool` (default: True) — Whether file loaded without error.
-- `error_message`: `Optional[str]` — Error info if loading failed.
-
-#### 6. `MCPFeatureResponse`
-Response model for a feature understanding request.
-
-- `feature_description`: `str` — What was requested.
-- `comprehensive_answer`: `str` — Detailed answer/summary.
-- `key_components`: `List[str]` — List of important concepts/components.
-- `implementation_details`: `str` — Technical implementation information.
-- `usage_examples`: `str` — Code snippets or usage guidance.
-- `related_concepts`: `List[str]` — Related topics.
-- `source_documentation_files`: `List[str]` — Source files/docs referenced.
-
-#### 7. `MCPState`
-Global state for the MCP request/response workflow, especially for integration with orchestrators like LangGraph.
-
-- **Request and Query Info**
-    - `request_type`: `str` — Either `"relevant_files"` or `"understand_feature"`.
-    - `user_query`: `str` — Original user input.
-- **Documentation Context**
-    - `documentation_guide_content`: `str`
-    - `documentation_loaded`: `bool`
-- **Workflow State**
-    - `discovered_documentation_files`: `List[str]`
-    - `loaded_documentation_files`: `List[MCPDocumentationFile]`
-    - `current_file_index`: `int`
-    - `files_discovery_complete`: `bool`
-    - `all_files_loaded`: `bool`
-- **Processing State**
-    - `llm_analysis_complete`: `bool`
-- **Raw LLM Responses**
-    - `raw_llm_response`: `dict`
-    - `raw_synthesis_response`: `dict`
-- **Results**
-    - `relevant_files_result`: `Optional[MCPRelevantFilesResponse]`
-    - `feature_understanding_result`: `Optional[MCPFeatureResponse]`
-- **Error Handling**
-    - `error_occurred`: `bool`
-    - `error_message`: `str`
-- **Configuration**
-    - `repo_path`: `Path`
-    - `max_results`: `int`
+### 7. **MCPState**
+- **Purpose:** The central workflow state object (suitable for orchestration frameworks like LangGraph). Tracks everything about the current MCP operation.
+- **Fields:** (Selection)
+  - `request_type: str` ("relevant_files" or "understand_feature")
+  - `user_query: str`
+  - Documentation: `documentation_guide_content`, `documentation_loaded`
+  - Discovered/loaded files: `discovered_documentation_files`, `loaded_documentation_files`
+  - Workflow state: `current_file_index`, `files_discovery_complete`, `all_files_loaded`, `llm_analysis_complete`
+  - LLM workflow internals: `raw_llm_response`, `raw_synthesis_response`
+  - Results: `relevant_files_result`, `feature_understanding_result`
+  - Error handling: `error_occurred`, `error_message`
+  - Configuration: `repo_path: Path`, `max_results: int`
 
 ---
 
 ## Dependencies
 
-- **Third-party**
-    - `pydantic`: Used for robust model/field validation and easy data serialization.
-- **Standard library**
-    - `typing`: For type annotations.
-    - `pathlib`: For the `Path` type, used in `MCPState`.
+### Internal
+- None (This file only defines schemas; it doesn’t import from project-internal modules.)
 
-**Downstream Usage**  
-Any server implementation, API layer, or workflow engine (e.g., LangGraph) that requires structured state or request/response envelopes for MCP operations will depend on these models.
+### External
+- `pydantic.BaseModel`, `Field` – for data validation and object modeling.
+- Standard Python modules:
+  - `typing` (`List`, `Optional`, `Dict`, `Any`)
+  - `pathlib.Path`
+
+### Downstream
+- This file is likely imported by:
+  - The MCP server REST API routes (FastAPI, Flask, etc.) for request/response validation.
+  - The workflow engine (e.g., LangGraph) to track analysis state.
+  - Any code that interacts with the MCP workflow or core analysis features.
 
 ---
 
 ## Usage Examples
 
-### 1. Finding Relevant Files
+### Using the Models in API Endpoints
 
 ```python
+from fastapi import FastAPI
 from src.mcp_models import MCPRelevantFilesRequest, MCPRelevantFilesResponse
 
-# Formulate a request
-request = MCPRelevantFilesRequest(
-    description="Find all files related to authentication",
-    max_results=5,
-    include_test_files=True
-)
+app = FastAPI()
 
-# After processing (pseudo-code)
-response = MCPRelevantFilesResponse(
-    query_description=request.description,
-    relevant_files=[
+@app.post("/mcp/relevant_files", response_model=MCPRelevantFilesResponse)
+def relevant_files_endpoint(request: MCPRelevantFilesRequest):
+    # Analyze the repository and find relevant files...
+    files = [
         MCPFileResult(
-            file_path="src/auth.py",
-            summary="Handles login and token validation",
+            file_path="src/example.py",
+            summary="Handles user authentication.",
             relevance_score=0.92
-        ),
-    ],
-    total_files_analyzed=120,
-    processing_time_seconds=0.45
-)
+        )
+    ]
+    response = MCPRelevantFilesResponse(
+        query_description=request.description,
+        relevant_files=files,
+        total_files_analyzed=54
+    )
+    return response
 ```
 
-### 2. Understanding a Feature
+### Tracking MCP State in a Workflow
 
 ```python
-from src.mcp_models import MCPFeatureRequest, MCPFeatureResponse
-
-# Feature understanding request
-feature_req = MCPFeatureRequest(
-    feature_description="Explain how user login is implemented"
-)
-
-# After processing (pseudo-code)
-feature_resp = MCPFeatureResponse(
-    feature_description=feature_req.feature_description,
-    comprehensive_answer="User login is handled by ...",
-    key_components=["auth.py", "token.py"],
-    usage_examples="See /examples/login_example.py"
-)
-```
-
-### 3. In a Workflow State
-
-```python
-from src.mcp_models import MCPState, MCPDocumentationFile
 from pathlib import Path
+from src.mcp_models import MCPState
 
 state = MCPState(
     request_type="understand_feature",
-    user_query="How does file upload work?",
-    repo_path=Path("/path/to/project"),
-    max_results=10
+    user_query="How does user login work?",
+    repo_path=Path("/path/to/repo")
 )
-
-# Add discovered and loaded documentation files within workflow
-state.discovered_documentation_files.append("docs/upload.md")
-state.loaded_documentation_files.append(
-    MCPDocumentationFile(
-        file_path="docs/upload.md",
-        content="...",
-        loaded_successfully=True
-    )
-)
+# ... update state as workflow progresses ...
+state.files_discovery_complete = True
+state.llm_analysis_complete = True
 ```
 
 ---
 
 ## Summary
 
-This file provides robust data models for using, validating, and managing requests, responses, and workflow state within the Model Context Protocol server and its related tooling. All central MCP objects for searching and explaining parts of a codebase are defined here, forming the backbone of server operations and workflow orchestration.
+This file is central to the MCP system, providing strongly-typed data structures for requests, responses, documentation, feature understanding, file analysis, and workflow state management. It supports robust development, error handling, and maintainability in applications that analyze, document, and serve code repositories using language models.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: e48743ca06ac853c859897e075c3941e2b2fd115e61500acbcf3f06c6aafdf7a
-relative_path: src/mcp_models.py
-generation_date: 2025-06-30T00:09:19.091107
+relative_path: src\mcp_models.py
+generation_date: 2025-07-01T22:16:52.681299
 ```
 <!-- END GENERATION METADATA -->

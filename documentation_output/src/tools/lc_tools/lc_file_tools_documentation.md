@@ -2,142 +2,130 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/tools/lc_tools/lc_file_tools.py
+# Documentation for src\tools\lc_tools\lc_file_tools.py
 
 # lc_file_tools.py
 
 ## Purpose
 
-This file defines a factory function for creating a set of [LangChain](https://python.langchain.com/) `Tool` objects for interacting with files in a specific repository. It exposes various file system operations—reading file contents, listing files in directories, searching by pattern, and getting file metadata—through a structured and consistent interface. The primary use case is to provide language model agents with safe, controlled access to a repository's files for tasks such as code analysis, documentation, or automation.
+This file defines utilities to generate a collection of file operation tools (as `Tool` objects) for use with LangChain. These tools enable reading file contents, listing files, searching for files by pattern, and retrieving file metadata within a given repository. The intent is to provide a language-model-friendly interface for common file system operations scoped to a specific repository path.
 
 ---
 
 ## Functionality
 
-### Main Function
+The core function in this module is:
 
-#### `create_file_tools(repo_path: Path) -> List[Tool]`
+### `create_file_tools(repo_path: Path) -> List[Tool]`
 
-- **Description**: Factory function to instantiate a list of LangChain `Tool` objects, each implementing a different file operation bound to a specified repository root.
-- **Parameters**:  
-  - `repo_path` (`Path`): The root path of the repository to operate on.
-- **Returns**:  
-  - `List[Tool]`: A list of LangChain `Tool` objects with standardized names and descriptions.
-
-#### Internal Wrapper Functions
-
-All wrappers handle conversion, parameter adaptation, exception handling, and output formatting for the underlying file operations:
-
-- **`read_file_wrapper(file_path: str) -> str`**
-  - Reads and returns the contents of the specified file.
-- **`list_files_wrapper(directory_path: str, extensions: str = "", recursive: str = "true") -> str`**
-  - Lists files in a directory, with optional filtering by extension(s) and recursion.
-- **`find_files_wrapper(pattern: str, directory: str = "") -> str`**
-  - Finds files matching a glob pattern; can be scoped to a subdirectory.
-- **`get_file_info_wrapper(file_path: str) -> str`**
-  - Returns basic information about a file: path, size, extension, and last modification time.
-
-Each wrapper is attached as a function (`func`) in a corresponding LangChain `Tool` entry, with an explicit `name` and `description` for user-facing agent interactions.
+- Returns a list of LangChain `Tool` objects, each exposing repository-specific file system functions.
+- The tool functions wrap lower-level implementations (e.g., `read_file_content`) and inject exception handling and LangChain integration.
+- The following tools are exposed:
+  - `read_file_content` — Read content of a specified file.
+  - `list_files_in_directory` — List files in a directory, with filtering and recursion options.
+  - `find_files_by_pattern` — Find files by glob pattern, optionally within a subdirectory.
+  - `get_file_info` — Get file metadata (size, extension, modification time).
 
 ---
 
 ## Key Components
 
-- **Imports**:
-  - `List` from `typing`
-  - `Path` from `pathlib`
-  - `Tool` from `langchain.tools`
-  - File utility functions from a sibling module (`..file_tools`):
-    - `read_file_content`
-    - `list_files_in_directory`
-    - `find_files_by_pattern`
-    - `get_file_info`
-- **Wrapper Functions**:
-  - Handle input/output normalization and exception reporting for agent robustness.
-- **LangChain `Tool` Instances**:
-  - Each represents a repository file operation, ready to be added to an agent or chain.
+### Inner Wrappers (Functions):
+
+Each tool exposes a wrapper function to adapt low-level I/O for LangChain usage:
+
+- **`read_file_wrapper(file_path: str) -> str`**
+  - Calls `read_file_content` and returns the file's contents or an error string.
+
+- **`list_files_wrapper(directory_path: str, extensions: str = "", recursive: str = "true") -> str`**
+  - Calls `list_files_in_directory` with optional extension and recursion control.
+  - Formats results as newline-separated list or a message if empty.
+
+- **`find_files_wrapper(pattern: str, directory: str = "") -> str`**
+  - Searches for files matching a `pattern` in an optional directory using `find_files_by_pattern`.
+  - Returns a newline-separated list or a not-found message.
+
+- **`get_file_info_wrapper(file_path: str) -> str`**
+  - Gets size, extension, and modification time of a file using `get_file_info`.
+  - Formats the information as a readable string.
+
+### File Tool List
+
+- **`file_tools`**  
+  A list of four `Tool`-type objects, each encapsulating a file system operation for repo-scoped usage (as described above).
 
 ---
 
 ## Dependencies
 
-### External
+### Internal Dependencies
 
-- **`langchain.tools.Tool`**: For structuring agent actions as callable, describable tools.
-- **`pathlib.Path`**: For robust, cross-platform file path handling.
+- **`read_file_content`**
+- **`list_files_in_directory`**
+- **`find_files_by_pattern`**
+- **`get_file_info`**
 
-### Internal
+  — All imported from the sibling module `..file_tools` (must be present/implemented).
 
-- **Sibling Module `file_tools`**:
-  - Core functions (`read_file_content`, `list_files_in_directory`, `find_files_by_pattern`, `get_file_info`) implement the actual file system logic. This file acts as a bridge, exposing those capabilities to LangChain agents.
+### External Dependencies
 
-### Downstream
+- **`Path`** from `pathlib`
+- **`List`** from `typing`
+- **`Tool`** from `langchain.tools`
 
-- Any code using LangChain agents that wants to enable file reading, listing, searching, and metadata retrieval within a repo should import and call `create_file_tools`.
+### What Depends on This
+
+- Any code wishing to expose repo-scoped file operations as LangChain Tools.
+- Typically imported and called within a LangChain agent or custom chain to provide file I/O for LLM-driven workflows.
 
 ---
 
 ## Usage Examples
 
-### 1. Integrating With a LangChain Agent
+### Example 1: Generating Tools for an Agent
 
 ```python
 from pathlib import Path
-from langchain.agents import initialize_agent
 from src.tools.lc_tools.lc_file_tools import create_file_tools
 
-repo_path = Path("/path/to/my/code/repo")
+repo_root = Path("/path/to/my/repo")
+tools = create_file_tools(repo_root)
 
-# Create the file tools.
-tools = create_file_tools(repo_path)
-
-# Add these tools to your agent.
-agent = initialize_agent(
-    tools=tools,
-    llm=your_llm,  # Your chosen language model
-    agent_type="zero-shot-react-description"
-)
-
-# Now your agent can:
-# - Read file contents
-# - List files (with extension filters, recursion)
-# - Find files by glob
-# - Get file metadata info
+# Now `tools` can be added to a LangChain agent/toolchain
+for tool in tools:
+    print(tool.name)
 ```
 
-### 2. Manual Invocation of Tools
+### Example 2: Use a Tool Directly
 
 ```python
-tools = create_file_tools(Path("/my/repo"))
+tools = create_file_tools(Path("./my_repo"))
+read_tool = [t for t in tools if t.name == "read_file_content"][0]
 
-# Call the read file tool directly
-file_text = tools[0].func("src/main.py")
-print(file_text)
-
-# List all Python files in the 'utils' directory, non-recursively
-py_files = tools[1].func("utils", ".py", "false")
-print(py_files)
+file_contents = read_tool.run("README.md")
+print(file_contents)
 ```
 
 ---
 
 ## Notes
 
-- Relative paths in tool calls are always interpreted with respect to the given `repo_path`.
-- All tool outputs are strings, formatted for easy agent consumption.
-- The tools return helpful error messages on failure—no exceptions are propagated.
-- For core file logic, see the sibling `file_tools` module.
+- All file paths are interpreted as relative to the `repo_path` provided.
+- Wrappers ensure any operating system errors are returned as readable messages, not exceptions.  
+- These tools are **not** intended for direct command-line use, but for integration with LangChain's Tool abstraction or similar AI orchestration frameworks.
 
 ---
 
-**This file bridges file system utility functions (_file_tools_) to the LangChain agent interface, providing robust, well-described tools for controlled repository access in agent-driven workflows.**
+## Summary
+
+This file defines a convenient factory (`create_file_tools`) to produce LangChain Tools for repository-scoped file system operations, wrapping common tasks like reading files, listing/searching files, and metadata retrieval into AI-accessible functions. It serves as a bridge between lower-level file manipulation and higher-level language model agent workflows.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: 76848ce72ac62104407dd8a841684e6ab09f260c5790a2c3f20fd917cbc6ddf9
-relative_path: src/tools/lc_tools/lc_file_tools.py
-generation_date: 2025-06-30T00:13:49.106601
+relative_path: src\tools\lc_tools\lc_file_tools.py
+generation_date: 2025-07-01T22:21:24.474393
 ```
 <!-- END GENERATION METADATA -->

@@ -26,6 +26,7 @@
       "args": [
         "generate",
         "--repo-path", "H:\\repos\\therapy-link",
+        "--cleanup",
         "--docs-path", "H:\\repos\\therapy-link\\docs",
         "--file-docs",
         "--guide",
@@ -115,8 +116,10 @@
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
       "args": [
-        "generate",
-        "--repo-path", "C:\\repos\\example-project",
+        "generate",        
+        "--repo-path", ".",        
+        "--cleanup",
+        "--docs-path", "docs",        
         "--file-docs",
         "--design-docs",
         "--guide",

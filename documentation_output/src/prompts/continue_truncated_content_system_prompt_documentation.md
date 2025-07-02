@@ -2,107 +2,106 @@
 <!-- This file was automatically generated and should not be manually edited -->
 <!-- To update this documentation, regenerate it using the documentation pipeline -->
 
-# Documentation for src/prompts/continue_truncated_content_system_prompt.py
+# Documentation for src\prompts\continue_truncated_content_system_prompt.py
 
-# continue_truncated_content_system_prompt.py
+# File: `src/prompts/continue_truncated_content_system_prompt.py`
 
 ## Purpose
 
-This file defines a system prompt template intended for use with AI or automated documentation generation tools. The template is specifically designed to support the continuation of truncated documentation sections—i.e., when the documentation for a particular section of a document has been cut off and needs to be resumed and completed. 
-
-It sets the context for the system to continue writing the documentation seamlessly, using provided context, previous content, section instructions, and suggested tools for gathering additional information.
+This file defines a system prompt template, `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT`, intended for use in automated documentation generation or augmentation systems. Its purpose is to provide a consistent and context-rich prompt when a section of documentation has previously been truncated and needs to be continued and completed by an AI, typically in an LLM-based workflow.
 
 ## Functionality
 
-### Main Functionality
+The primary functionality provided by this file is the definition of a multi-line string template. This template is designed to be filled in with specific variables (such as `document_name`, `section_name`, `context`, etc.), and then used to guide an AI assistant or agent in continuing the writing of a documentation section.
 
-- **Prompt Template Definition**: The core functionality is the definition of a multi-line string template named `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT`. This template incorporates several placeholders that will be programmatically replaced with relevant values at runtime.
-- **System Message for AI Tools**: The template is constructed to be used as a system prompt for Large Language Models (LLMs) or AI agents tasked with auto-generating or completing documentation.
-- **Tool Instructions**: The prompt informs the system about available helper functions for reading files and directories, which the AI can use to gather extra content or clarify section requirements.
+The prompt informs the assistant that it is continuing previously truncated content and provides it with:
+- The current document and section context
+- Original instructions for the section
+- Access to specific file reading tools to facilitate information gathering
+- The necessary cues (`continuation_prompt`) for smooth content continuation
 
 ## Key Components
 
-### Global Variables
+### Variables
 
-- **`CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT`**:  
-  - *Type*: `str` (multi-line string)
-  - *Purpose*: Serves as a system prompt template for continuing documentation sections.  
-  - *Placeholders*:  
-    - `{document_name}`: Name of the document being completed.
-    - `{section_name}`: Current section that needs to be continued.
-    - `{context}`: Relevant context from the existing documentation or previous sections.
-    - `{section_template}`: Original instructions or template for this section.
-    - `{continuation_prompt}`: Specific task or instruction on how to continue.
+#### `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT`
+- **Type**: `str` (multi-line string)
+- **Purpose**: Acts as a system prompt template with placeholders for runtime substitution.
+- **Placeholders**:
+  - `{document_name}`: Name of the documentation being worked on.
+  - `{section_name}`: Name of the section being continued.
+  - `{context}`: Relevant context from previous documentation.
+  - `{section_template}`: Instructions describing what this section should contain.
+  - `{continuation_prompt}`: Custom instructions or hint on how to resume writing the section.
 
-*No functions or classes are defined in this file; the only item is the prompt template string.*
+### Prompt Tools Introduced
+
+The template describes a set of file reading tools that the agent may access:
+- `read_file_content(file_path)`: Read content from a given file.
+- `list_files_in_directory(directory_path, extensions="", recursive="true")`: List files in a directory, optionally filtering by extension and recursion.
+- `find_files_by_pattern(pattern, directory="")`: Search for files matching a specific pattern.
+- `get_file_info(file_path)`: Retrieve file metadata.
+
+These are references and not actual implementations in this file, but they are expected to be available in the environment where the prompt is used.
 
 ## Dependencies
 
+### Imported Modules
+- **None**: This file is self-contained and does not import any modules.
+
 ### External Dependencies
+- **Template Variables**: The prompt relies on runtime code (elsewhere in the application) to provide the appropriate values for its placeholders.
+- **Prompt Usage Environment**: Designed for use in systems that handle dynamic text substitution and execute/dispatch the prompt to an LLM-powered agent.
 
-- **None at the File Level**:  
-  The file itself does not import or depend on other Python modules.
+### Downstream Dependencies
 
-### Usage/Integration Dependencies
-
-- **This file is intended to be imported and used by**:  
-  - Documentation generation tools or scripts
-  - AI systems that process and fill in documentation prompts
-
-- **Placeholder Tools Mentioned in the Prompt for AI Systems**:  
-  The prompt references the following tools which *the AI system* is expected to use:
-    - `read_file_content(file_path)`
-    - `list_files_in_directory(directory_path, extensions="", recursive="true")`
-    - `find_files_by_pattern(pattern, directory="")`
-    - `get_file_info(file_path)`
-    
-  These are informational for the LLM/AI that uses the prompt—they are not implemented in this file.
+Other code files or services in the repository may import and use `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT` when they need to generate a task or prompt for resuming or completing documentation sections.
 
 ## Usage Examples
 
-### Example: Filling the Prompt and Sending to an AI System
+### Example: Using the Prompt in a Documentation Tool
 
 ```python
 from src.prompts.continue_truncated_content_system_prompt import CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT
 
-prompt = CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT.format(
-    document_name="API Reference",
-    section_name="Authentication",
-    context="Earlier sections described the overall API structure and error handling.",
-    section_template="Describe how users authenticate with the system, including token usage.",
-    continuation_prompt="The last sentence was: 'After obtaining a token, users can...'. Please continue from here."
+# Sample data
+document_name = "API Reference"
+section_name = "Authentication"
+context = "Previous sections have explained the basics of user registration and login."
+section_template = "Describe how to obtain and refresh authentication tokens."
+continuation_prompt = "Continue describing token expiration policies, and provide code examples."
+
+# Fill the template with specific values
+system_prompt = CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT.format(
+    document_name=document_name,
+    section_name=section_name,
+    context=context,
+    section_template=section_template,
+    continuation_prompt=continuation_prompt
 )
 
-# Pass `prompt` as a system message or context when calling your LLM
-response = call_llm_system_api(system_prompt=prompt)
+# The resulting system_prompt can now be passed to an LLM or automation agent
+print(system_prompt)
 ```
 
-### Example: Integration in a Documentation Automation Script
+### Typical Use Case
 
-```python
-def generate_continue_prompt(doc_name, sec_name, prev_context, sec_template, cont_prompt):
-    from src.prompts.continue_truncated_content_system_prompt import CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT
-    return CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT.format(
-        document_name=doc_name,
-        section_name=sec_name,
-        context=prev_context,
-        section_template=sec_template,
-        continuation_prompt=cont_prompt
-    )
-```
+1. An LLM-based documentation generator detects an incomplete or truncated section.
+2. The generator collects relevant context and prepares instructions for continuing the section.
+3. The generator fills in `CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT` with the necessary data.
+4. The filled-in prompt is sent to an AI agent, which resumes or completes the writing accordingly.
 
 ---
 
 **Note:**  
-- This file is purely a template provider; to be functional, it must be used in conjunction with external code that fills its format placeholders and supplies it to an AI documentation agent.
-- No executable code or logic exists in this file apart from the prompt string.
+This file serves as a static resource for system prompt standardization in documentation tools. It does not execute any logic itself. To use it, import the string and format/dispatch it as needed in your application's document generation workflow.
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
 file_hash: 1e800d7677c5b13a63d17bf7c6ad891279b13c769722c54eebd014695771a503
-relative_path: src/prompts/continue_truncated_content_system_prompt.py
-generation_date: 2025-06-30T00:10:53.084301
+relative_path: src\prompts\continue_truncated_content_system_prompt.py
+generation_date: 2025-07-01T22:18:16.762910
 ```
 <!-- END GENERATION METADATA -->

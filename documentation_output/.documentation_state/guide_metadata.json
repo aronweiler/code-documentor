@@ -1,52 +1,43 @@
 {
-  "guide_last_generated": 1751276961.3489857,
-  "guide_version": 3,
+  "guide_last_generated": 1751436394.8979769,
+  "guide_version": 6,
   "guide_structure_hash": "",
   "tracked_files": {
     "config.yaml": {
       "source_file_path": "config.yaml",
-      "source_file_modified": 1751258891.0177126,
+      "source_file_modified": 1751434900.222763,
       "doc_file_path": "config_documentation.md",
-      "doc_generated": 1751275679.3300583,
-      "doc_file_hash": "bd5f6397b9a07fb5f22efc170cefa9863bb5117ece6b4560aa599f365ac9c369",
-      "guide_entry_generated": 1751275679.3300583,
-      "guide_entry_hash": "0fcb5c6fdc82c7fac8f1e66fbfffd72b11de2c2454e40c617eb4edc563ff9a69"
+      "doc_generated": 1751436394.898704,
+      "doc_file_hash": "025fe7ba92607c0e415fae7f70bb997b6b37a2a8b4db9d37f69ab816c9832b8d",
+      "guide_entry_generated": 1751436394.898704,
+      "guide_entry_hash": "f19fe25bf5d43e48430b751fe267a23a77acf84a821206a7ac6ddf4d30d65968"
     },
     "install.sh": {
       "source_file_path": "install.sh",
       "source_file_modified": 1749573409.469478,
       "doc_file_path": "install_documentation.md",
-      "doc_generated": 1751275679.3334708,
+      "doc_generated": 1751435586.5780554,
       "doc_file_hash": "153ba84048ca5bb10b11cd2256b6fe2e1049066495b63cc2de86398f9fca9250",
-      "guide_entry_generated": 1751275679.3334708,
-      "guide_entry_hash": "4a25c7934dc13554e5639717ea4a9e0ff1e85375ef7f3117beb3ffbd43a4748c"
+      "guide_entry_generated": 1751435586.5780554,
+      "guide_entry_hash": "71428a61d7c66f5ac1011338e91a1f60e8f54e7fb87a3a97cfca943e73b824fd"
     },
     "main.py": {
       "source_file_path": "main.py",
-      "source_file_modified": 1751259572.1806624,
+      "source_file_modified": 1751436146.8731618,
       "doc_file_path": "main_documentation.md",
-      "doc_generated": 1751275679.3391712,
-      "doc_file_hash": "4c3ecf202fde78b8102b959a82a013e3482d9af7692f9f72e3e80ee8cf5983af",
-      "guide_entry_generated": 1751275679.3391712,
-      "guide_entry_hash": "7e0e13c444ac095404c4d37b771d2a14f22f8afd0973e24248034a75352a58e8"
+      "doc_generated": 1751436394.8995492,
+      "doc_file_hash": "0e48c41b924d526d6dfbf707c97e0516847dbed0ffd604fd6501d38943d7e8a9",
+      "guide_entry_generated": 1751436394.8995492,
+      "guide_entry_hash": "38e730d5b5cb5062ee5f901716ec4bed7849aca5cc56b0426c1c4165a9412171"
     },
     "mcp_server.py": {
       "source_file_path": "mcp_server.py",
-      "source_file_modified": 1751264983.4278154,
+      "source_file_modified": 1751432781.304587,
       "doc_file_path": "mcp_server_documentation.md",
-      "doc_generated": 1751275679.3437836,
-      "doc_file_hash": "c3b011c7f2eefe353e34df6bdf3dc21617caa6170203cbb10a1842ebd7e36e22",
-      "guide_entry_generated": 1751275679.3437836,
-      "guide_entry_hash": "8d6023b219f5f2b980fb7b7f8542a7719a995ada36eb4e65b7a9ec6b3eb82180"
-    },
-    "mcp_server_http.py": {
-      "source_file_path": "mcp_server_http.py",
-      "source_file_modified": 0.0,
-      "doc_file_path": "mcp_server_http_documentation.md",
-      "doc_generated": 1751267044.5198438,
-      "doc_file_hash": "119ab427c894d72eb69250ee9cb20182e341a111155224462cd9da3b7a272e2e",
-      "guide_entry_generated": 1751275679.3498108,
-      "guide_entry_hash": "5dd10168a8a1479eed5c577d9b6dbebcd6c7712153e43b02c3e9a7fc8103fd80"
+      "doc_generated": 1751435586.5734377,
+      "doc_file_hash": "332c99616d0d3eb8edc7c25f870c35fe83c0b29ad9fda699fee46594fccef9ee",
+      "guide_entry_generated": 1751435586.5734377,
+      "guide_entry_hash": "28e866c40074f01757be6d229762b30360a1ea7d00c318e80e427146971b1204"
     },
     ".vscode/launch.json": {
       "source_file_path": ".vscode/launch.json",
@@ -308,6 +299,258 @@
       "doc_file_hash": "6935d7aba5396b2415f3b067fe38016a2f142e78ab368712a01d62556a07127e",
       "guide_entry_generated": 1751276961.3570306,
       "guide_entry_hash": "c5c0af8270607bc4ae88eb8e207f3a26cd01e3e50b53192964936faac2cf7ef6"
+    },
+    ".vscode\\launch.json": {
+      "source_file_path": ".vscode\\launch.json",
+      "source_file_modified": 1751436232.6285827,
+      "doc_file_path": ".vscode\\launch_documentation.md",
+      "doc_generated": 1751436394.898314,
+      "doc_file_hash": "0170d0782aeb9fe98d314cbbee50c4d29aa0664bb3bd1215302326049971392e",
+      "guide_entry_generated": 1751436394.898314,
+      "guide_entry_hash": "37f0aa06174cfb94ab2cce46958e1394b885ed4aff9e5da7646f6dc8c0841f79"
+    },
+    "src\\context_manager.py": {
+      "source_file_path": "src\\context_manager.py",
+      "source_file_modified": 1751428349.600786,
+      "doc_file_path": "src\\context_manager_documentation.md",
+      "doc_generated": 1751435586.570351,
+      "doc_file_hash": "5bc55386268bc465acaae2a394aa6b05a42ba6d2bacfe2268bfe292d1dd354a3",
+      "guide_entry_generated": 1751435586.570351,
+      "guide_entry_hash": "02e9c0228df87d97327af9687bca9ea9dd73db131b02eaca15cf0386b2ab8eff"
+    },
+    "src\\document_processor.py": {
+      "source_file_path": "src\\document_processor.py",
+      "source_file_modified": 1749571803.46351,
+      "doc_file_path": "src\\document_processor_documentation.md",
+      "doc_generated": 1751435586.5709481,
+      "doc_file_hash": "9fbf8e87df14910f4c087899337b44d499ba528c941b9c01bd5a7d10a25ce6e4",
+      "guide_entry_generated": 1751435586.5709481,
+      "guide_entry_hash": "c9fdc2e5faa88fa3ed4376e762b1e8425804a2ec767f2fe3e5b6a968ebd8df13"
+    },
+    "src\\file_processor.py": {
+      "source_file_path": "src\\file_processor.py",
+      "source_file_modified": 1749619352.1372204,
+      "doc_file_path": "src\\file_processor_documentation.md",
+      "doc_generated": 1751435586.5747142,
+      "doc_file_hash": "382319a05f8ccba63aeaa861e97344f9a745d551dac12601bd439814b8972647",
+      "guide_entry_generated": 1751435586.5747142,
+      "guide_entry_hash": "257c0e8dffe13b08c7c203af8ab0c879f3792937c077073c8a2cf2d89f1e656b"
+    },
+    "src\\guide_generator.py": {
+      "source_file_path": "src\\guide_generator.py",
+      "source_file_modified": 1751308841.0463378,
+      "doc_file_path": "src\\guide_generator_documentation.md",
+      "doc_generated": 1751435586.573939,
+      "doc_file_hash": "6104090c445ac3efd9acc96e019d3335324a3b91488e86a5e1a984057bea1fed",
+      "guide_entry_generated": 1751435586.573939,
+      "guide_entry_hash": "bb1b2573f4f89a929bf7936cad374b96859c26490c59883b9b8728465fbf2122"
+    },
+    "src\\guide_metadata_manager.py": {
+      "source_file_path": "src\\guide_metadata_manager.py",
+      "source_file_modified": 1751308841.0463378,
+      "doc_file_path": "src\\guide_metadata_manager_documentation.md",
+      "doc_generated": 1751435586.5716922,
+      "doc_file_hash": "f9a22238bbeeb963ffae305e47db6f85c01e35bb46c542aa52528c1067d4386f",
+      "guide_entry_generated": 1751435586.5716922,
+      "guide_entry_hash": "d4140b2846b5e18ecc92b39fe2c664286610995f6a3acefbca535a907878ef20"
+    },
+    "src\\llm_manager.py": {
+      "source_file_path": "src\\llm_manager.py",
+      "source_file_modified": 1749619511.8402693,
+      "doc_file_path": "src\\llm_manager_documentation.md",
+      "doc_generated": 1751435586.5769062,
+      "doc_file_hash": "f37f85e7681846ae5a81a40874ac91de081c640345b54d9283d0e2ade855414d",
+      "guide_entry_generated": 1751435586.5769062,
+      "guide_entry_hash": "59af6789b3d4caeb2611b21af3c0c70f87f0f30a1710b7aa9c3292cf7dd812c2"
+    },
+    "src\\mcp_manager.py": {
+      "source_file_path": "src\\mcp_manager.py",
+      "source_file_modified": 1751432286.274754,
+      "doc_file_path": "src\\mcp_manager_documentation.md",
+      "doc_generated": 1751435586.579056,
+      "doc_file_hash": "0f160d91f55c26e9584fd608ed2f5f44c782dcf818c4bbe5be904d764c6c35aa",
+      "guide_entry_generated": 1751435586.579056,
+      "guide_entry_hash": "f996d26143a5ac4a5e12e38790b595f952851c6a368039c4370bc5f30931436d"
+    },
+    "src\\mcp_models.py": {
+      "source_file_path": "src\\mcp_models.py",
+      "source_file_modified": 1751308841.0473368,
+      "doc_file_path": "src\\mcp_models_documentation.md",
+      "doc_generated": 1751435586.575527,
+      "doc_file_hash": "4bda9066d1462345ec5c5a71933d091885aec1fe6e25333759862b14675cdb5e",
+      "guide_entry_generated": 1751435586.575527,
+      "guide_entry_hash": "ebf08427061e61cdc0b724208b29baf1c26c51fb6320399e4ae624d66c74a82a"
+    },
+    "src\\models.py": {
+      "source_file_path": "src\\models.py",
+      "source_file_modified": 1751435111.1157842,
+      "doc_file_path": "src\\models_documentation.md",
+      "doc_generated": 1751436394.9020655,
+      "doc_file_hash": "7c42da4a1ffd7e93638804b814eb02d43746afe26e4aae05a789badf6a1fbc40",
+      "guide_entry_generated": 1751436394.9020655,
+      "guide_entry_hash": "c34d959318aa2b4195db86828b06d5982c44f066d27203ae64ab151b91bb9513"
+    },
+    "src\\pipeline.py": {
+      "source_file_path": "src\\pipeline.py",
+      "source_file_modified": 1751428349.600786,
+      "doc_file_path": "src\\pipeline_documentation.md",
+      "doc_generated": 1751435586.5741835,
+      "doc_file_hash": "fdf60280c03469668d623de4fec0d5c2aa7298a674f8eaabb7e8d42d365c12bd",
+      "guide_entry_generated": 1751435586.5741835,
+      "guide_entry_hash": "8a790f31191f080438054d6ebc5c5aac92d99b572ffc82fb7abd1a8de9f05ce9"
+    },
+    "src\\prompts\\ai_assembly_system_message.py": {
+      "source_file_path": "src\\prompts\\ai_assembly_system_message.py",
+      "source_file_modified": 1749667873.3941772,
+      "doc_file_path": "src\\prompts\\ai_assembly_system_message_documentation.md",
+      "doc_generated": 1751435586.5752356,
+      "doc_file_hash": "30af2c439ba58ab368d34c685bbbf51570c606582b516788c395600287786c2c",
+      "guide_entry_generated": 1751435586.5752356,
+      "guide_entry_hash": "912c5eb2382ee5892b93bbdce87d151c32cf9f839456ea61774466f038f3fd57"
+    },
+    "src\\prompts\\continue_truncated_content_system_prompt.py": {
+      "source_file_path": "src\\prompts\\continue_truncated_content_system_prompt.py",
+      "source_file_modified": 1749612907.2487538,
+      "doc_file_path": "src\\prompts\\continue_truncated_content_system_prompt_documentation.md",
+      "doc_generated": 1751435586.5731773,
+      "doc_file_hash": "2b627c9e77079428105d5c194327c5e1f63a23b0eba19c549c7ce67408c5d860",
+      "guide_entry_generated": 1751435586.5731773,
+      "guide_entry_hash": "effa643b869cd69a7ce3a3e606f9f606d57aece135f6a4f6e38eccb1604500c8"
+    },
+    "src\\prompts\\generate_doc_summary_system_message.py": {
+      "source_file_path": "src\\prompts\\generate_doc_summary_system_message.py",
+      "source_file_modified": 1749620124.2537134,
+      "doc_file_path": "src\\prompts\\generate_doc_summary_system_message_documentation.md",
+      "doc_generated": 1751435586.5793972,
+      "doc_file_hash": "70c22e6e6dd769a79724c38f0c2b02e9bfbd398e6e360343cadb8f0e9b23205f",
+      "guide_entry_generated": 1751435586.5793972,
+      "guide_entry_hash": "c8d7e4c3da620acc1f415ce2ea992480203e209de8ea5654c488c9e1f83059e6"
+    },
+    "src\\prompts\\generate_file_documentation_system_message.py": {
+      "source_file_path": "src\\prompts\\generate_file_documentation_system_message.py",
+      "source_file_modified": 1749668157.213372,
+      "doc_file_path": "src\\prompts\\generate_file_documentation_system_message_documentation.md",
+      "doc_generated": 1751435586.5701144,
+      "doc_file_hash": "aeb8ccec542fc87853b257d3901949ea7893cc27cec9f6f9a1844f1a7f0cd67a",
+      "guide_entry_generated": 1751435586.5701144,
+      "guide_entry_hash": "8fc5d7f9e8b90f51fb1da4d2d463a90cfe7fbf3a400b4ec4896b209d26bdbd5a"
+    },
+    "src\\prompts\\mcp_file_relevance_prompt.py": {
+      "source_file_path": "src\\prompts\\mcp_file_relevance_prompt.py",
+      "source_file_modified": 1751431381.578859,
+      "doc_file_path": "src\\prompts\\mcp_file_relevance_prompt_documentation.md",
+      "doc_generated": 1751435586.5744452,
+      "doc_file_hash": "af277943e97dbee18f3bfad3fb937e1f0a040aa5502521311594cf0bc9acd6e3",
+      "guide_entry_generated": 1751435586.5744452,
+      "guide_entry_hash": "7ea2d701036205561b95aa280c3f587821a1b331e369f380e3fd93f3257b8dcc"
+    },
+    "src\\prompts\\section_prompt_system_message.py": {
+      "source_file_path": "src\\prompts\\section_prompt_system_message.py",
+      "source_file_modified": 1749612907.2409823,
+      "doc_file_path": "src\\prompts\\section_prompt_system_message_documentation.md",
+      "doc_generated": 1751435586.5758088,
+      "doc_file_hash": "f6f8d6ae3f193416de410411f2602ca2cadfe05406e49ecb5bd194c8208a1389",
+      "guide_entry_generated": 1751435586.5758088,
+      "guide_entry_hash": "3b2eb10b7d96ae8021e4eb5c073241178cf1fe7b74f96244ddb9b2cf7a761dc9"
+    },
+    "src\\prompts\\summarize_docs_system_message.py": {
+      "source_file_path": "src\\prompts\\summarize_docs_system_message.py",
+      "source_file_modified": 1749668245.9515326,
+      "doc_file_path": "src\\prompts\\summarize_docs_system_message_documentation.md",
+      "doc_generated": 1751435586.5783832,
+      "doc_file_hash": "b5aae16fb3b6c80338856bfb40cdf3a8bb81b41fcc41d7dff813d916de9eb76e",
+      "guide_entry_generated": 1751435586.5783832,
+      "guide_entry_hash": "7287126dcb83bb7929e2a9671ee45100684b715660005c311f24e2afec77e4da"
+    },
+    "src\\report_generator.py": {
+      "source_file_path": "src\\report_generator.py",
+      "source_file_modified": 1749619410.90591,
+      "doc_file_path": "src\\report_generator_documentation.md",
+      "doc_generated": 1751435586.5736842,
+      "doc_file_hash": "73b577f56d0df8f2ef0d4022bf369d82c3c6b2a605c493ff6c17c7d726f5910f",
+      "guide_entry_generated": 1751435586.5736842,
+      "guide_entry_hash": "83c7b96af7cbb72a02ae1bf0b914553a3a3ff6df221c769d9e839812450bea08"
+    },
+    "src\\state_manager.py": {
+      "source_file_path": "src\\state_manager.py",
+      "source_file_modified": 1749624250.5607378,
+      "doc_file_path": "src\\state_manager_documentation.md",
+      "doc_generated": 1751435586.574977,
+      "doc_file_hash": "be8f722e91ebecff954e1c19e565de06b4c5440e5d633a778a0d8c0c34e2c9e4",
+      "guide_entry_generated": 1751435586.574977,
+      "guide_entry_hash": "42877e90527ebc7f447324869832ba13997f3945e76c756d016be7044c2dd426"
+    },
+    "src\\tools\\file_tools.py": {
+      "source_file_path": "src\\tools\\file_tools.py",
+      "source_file_modified": 1749602237.7756152,
+      "doc_file_path": "src\\tools\\file_tools_documentation.md",
+      "doc_generated": 1751435586.5707026,
+      "doc_file_hash": "1774cea0915490b5c5b8d68c35e467378ab3cb1c00e3c961cf0efac887725861",
+      "guide_entry_generated": 1751435586.5707026,
+      "guide_entry_hash": "4a0a617da8320f37ad14a1538e8e2cf0f3cb1975ab57b9c4c07ad50d48357e82"
+    },
+    "src\\tools\\lc_tools\\lc_file_tools.py": {
+      "source_file_path": "src\\tools\\lc_tools\\lc_file_tools.py",
+      "source_file_modified": 1749612092.9101136,
+      "doc_file_path": "src\\tools\\lc_tools\\lc_file_tools_documentation.md",
+      "doc_generated": 1751435586.5760982,
+      "doc_file_hash": "debe7fed3847649f25628a3e149be01188c0f97e886edae29dd8a6e3e68a5761",
+      "guide_entry_generated": 1751435586.5760982,
+      "guide_entry_hash": "97b13121849c4213a2c3120555589d70c69c183e4551e8a67442b12a764b20ad"
+    },
+    "src\\utilities\\token_manager.py": {
+      "source_file_path": "src\\utilities\\token_manager.py",
+      "source_file_modified": 1749614085.11809,
+      "doc_file_path": "src\\utilities\\token_manager_documentation.md",
+      "doc_generated": 1751435586.5763874,
+      "doc_file_hash": "438d0a08749d6c7e579dbaaef66db01107b7783227006ab34de1d4aaec192db2",
+      "guide_entry_generated": 1751435586.5763874,
+      "guide_entry_hash": "72ee67e391648755fd53a64e6f230d5a96eca2384e81c5e10d327ee9a4a0cb7d"
+    },
+    "src\\code_analyzer.py": {
+      "source_file_path": "src\\code_analyzer.py",
+      "source_file_modified": 1751308841.0453377,
+      "doc_file_path": "src\\code_analyzer_documentation.md",
+      "doc_generated": 1751436394.901306,
+      "doc_file_hash": "e83f6c6faff551e0c81d396b1756a2d1c46b2dc5b4df30fa3eaf89ca80b913e4",
+      "guide_entry_generated": 1751436394.901306,
+      "guide_entry_hash": "81a0ff4b633d95ddc7dd5f830765924650cd480ac0bd1a4f836d1bc3d48c7052"
+    },
+    "src\\design_document_generator.py": {
+      "source_file_path": "src\\design_document_generator.py",
+      "source_file_modified": 1751435123.935924,
+      "doc_file_path": "src\\design_document_generator_documentation.md",
+      "doc_generated": 1751436394.900911,
+      "doc_file_hash": "1a878f5ed3e4a4975127eedd8903b51ce1cdece42f748809a2f03100dd4a2136",
+      "guide_entry_generated": 1751436394.900911,
+      "guide_entry_hash": "457ac63a973587b66a3ca1a8d5d3260c252e82d1d0c0b73f9f9c5f7828fbbad1"
+    },
+    ".vscode\\tasks.json": {
+      "source_file_path": ".vscode\\tasks.json",
+      "source_file_modified": 1751308841.0303395,
+      "doc_file_path": ".vscode\\tasks_documentation.md",
+      "doc_generated": 1751436394.8990872,
+      "doc_file_hash": "5329dbeaec319437f67cd27f0f9eccbe10fbfd32c37b46228abf9e906e07c311",
+      "guide_entry_generated": 1751436394.8990872,
+      "guide_entry_hash": "0666439593ce200be490e1580ffd4298ec1b37880b60ff0471457b48fb41610f"
+    },
+    ".vscode\\settings.json": {
+      "source_file_path": ".vscode\\settings.json",
+      "source_file_modified": 1751308841.0303395,
+      "doc_file_path": ".vscode\\settings_documentation.md",
+      "doc_generated": 1751436394.900401,
+      "doc_file_hash": "7eb25b9341e2e34620bc9717e2c73899843273e56d6c1d8d51a2e3e422d27a81",
+      "guide_entry_generated": 1751436394.900401,
+      "guide_entry_hash": "428b777132064bfb29fd491ed3f345f0fde62cf88b53558ead012ef934e46f9f"
+    },
+    "src\\config.py": {
+      "source_file_path": "src\\config.py",
+      "source_file_modified": 1749571803.4625103,
+      "doc_file_path": "src\\config_documentation.md",
+      "doc_generated": 1751436394.9001057,
+      "doc_file_hash": "2310f7a8013c64304795c054286faafed1d3cff6fef76d2e4a885ffb2450cd31",
+      "guide_entry_generated": 1751436394.9001057,
+      "guide_entry_hash": "6b10e878946eadd30baac05714f23efe65546e0a79742716926684922cffd232"
     }
   }
 }

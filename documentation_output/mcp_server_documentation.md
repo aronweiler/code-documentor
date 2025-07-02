@@ -8,190 +8,188 @@
 
 ## Purpose
 
-This file implements the **Documentation MCP Server**, an MCP (Machine Communication Protocol) server designed to provide intelligent interaction with repository documentation. It enables advanced tooling for searching, retrieving, and understanding codebase documentation—primarily for use in documentation assistants, developer tools, or code analysis pipelines.
+This file implements the **MCP Server** specialized for repository documentation interaction. It acts as a backend service that exposes tools to analyze and understand code repositories based on their documentation. The server allows downstream tools or user interfaces to:
 
-The primary goals are:
+- Search for source files relevant to a natural language description.
+- Provide a comprehensive documentation overview of specific project features.
 
-- **Enabling tools** to query for relevant files based on natural language descriptions.
-- **Supporting feature comprehension** by producing documentation summaries for specific features.
-- **Integrating with MCP-compliant clients** via a standardized stdio server.
+It primarily operates in developer and code review environments where understanding, analysis, and documentation of complex repositories are required.
 
 ---
 
 ## Functionality
 
-The server provides two main tools (endpoints) usable by client interfaces:
+The key function of this file is to define, configure, and launch a documentation-aware MCP (Multi-Component Processing) server using the `mcp` framework. The server exposes two primary tools:
 
 1. **get_relevant_files**:  
-   Finds files within the repository that are most relevant to a provided natural language description (e.g., "files related to database migrations").
+   Given a human-readable description, returns relevant source code files, with reasoning and relevance scores.
 
 2. **understand_feature**:  
-   Provides a structured, comprehensive summary and understanding of a feature, including key components, implementation details, usage examples, and documentation sources, based on a feature description.
+   Given a feature description, analyzes documentation to synthesize a comprehensive explanation, implementation details, usage, and related concepts.
 
-The server is started typically as a command-line script. It logs debug information to `/tmp/mcp_debug.log`.
+### Key Functional Steps
 
-### Main Steps:
+- **Initialization**  
+  - Determines repository path (from CLI, environment variable, or defaults to CWD).
+  - Sets up debug logging for troubleshooting and traceability.
+  - Instantiates an `MCPManager` (which is responsible for actual file and feature analysis).
 
-- Parses configuration (repo path) from arguments or environment.
-- Initializes the MCP server and tools.
-- Handles incoming tool requests, routes them to the MCPManager business logic, and formats responses as structured JSON for downstream clients.
-- Runs as a stdio-based async server for MCP.
+- **Tool Registration**  
+  - Defines tool schemas via `@server.list_tools()`.  
+  - Handles tool invocations via `@server.call_tool()`, with routing logic for each supported tool.
+
+- **Request Handling**
+  - For each tool call, extracts necessary parameters, delegates work to `MCPManager`, formats the response as JSON, and returns it.
+
+- **Server Execution**
+  - Launches the standard I/O MCP server.
+  - Responds to requests using the configured server and registered handlers.
 
 ---
 
 ## Key Components
 
-### 1. Classes
+### Classes
 
-#### `DocumentationMCPServer`
-- **Purpose**: Sets up the server, links it to a repository, and manages access to `MCPManager`, which contains the core analysis and documentation retrieval logic.
-- **Members**:
-  - `repo_path` (`Path`): Path to the root of the documentation repository.
-  - `server` (`mcp.server.Server`): The MCP stdio server instance.
-  - `mcp_manager` (`MCPManager`): Logic handler for search/documentation features.
+- **DocumentationMCPServer**
+  - Central server wrapper holding repository context, server instance, and `MCPManager`.
+  - Methods:
+    - `get_server()`: Returns the underlying MCP `Server` instance for further configuration or execution.
 
-#### `MCPManager` *(from `src.mcp_manager`)*  
-Handles actual business logic for:
-- Finding relevant files (`find_relevant_files`)
-- Understanding specific features (`understand_feature`)
-*(Interface only referenced in this file; details assumed in `src/mcp_manager.py`)*
+### Functions
 
-### 2. Functions
+- **main()** *(async)*
+  - Entry point.
+  - Parses configuration, instantiates server, registers tools, and runs server loop.
 
-#### `main()`
-- Bootstraps the server, sets up the repository path, registers tools, and starts the stdio server.
+- **handle_list_tools()** *(@server.list_tools)*
+  - Returns available tool schemas, including their expected input structure.
 
-#### Tool Handlers
-- `handle_list_tools`: Returns metadata about the available tools/endpoints.
-- `handle_tool_call`: Central tool dispatcher which:
-  - For `get_relevant_files`: delegates to `MCPManager.find_relevant_files(...)`
-  - For `understand_feature`: delegates to `MCPManager.understand_feature(...)`
-  - For other names: returns an error response.
+- **handle_tool_call(name: str, arguments: dict)** *(@server.call_tool)*
+  - Handles incoming tool requests.
+  - Delegates calls to either `get_relevant_files` or `understand_feature`, leveraging `MCPManager`.
 
-### 3. Tool Schemas
+### Tool Definitions
 
-#### `get_relevant_files`
-- **Input Schema**: Requires a `description` (str) field, containing natural language query.
+- Tool: `get_relevant_files`
+  - Input: `{ description: string }`
+  - Output includes file paths, summaries, relevance scores, and reasoning.
+- Tool: `understand_feature`
+  - Input: `{ feature_description: string }`
+  - Output includes an explanation, implementation details, examples, related concepts, and source docs.
 
-#### `understand_feature`
-- **Input Schema**: Requires a `feature_description` (str) field describing the feature of interest.
+### Debug Logging
 
-### 4. Logging
-- Writes extensive debug/log output to `/tmp/mcp_debug.log`.
+- All major actions and exceptions are logged to `/tmp/mcp_debug.log` for diagnostics.
 
 ---
 
 ## Dependencies
 
-- **Standard libraries**:
-  - `asyncio`, `json`, `os`, `sys`, `pathlib`, `typing`
-- **Third-party libraries** (or project modules):
-  - `mcp.server.stdio`, `mcp.types`, `mcp.server`, `mcp.server.models`
-  - `pydantic.AnyUrl`
-  - **Local project**: `src.mcp_manager.MCPManager`
+### Imports
 
-### What depends on this file?
+- **mcp.server, mcp.types, mcp.server.models**  
+  Core MCP protocol and server support.
 
-- Any process that launches the documentation MCP server (e.g., a code documentation assistant, dev environment, or integration test).
+- **src.mcp_manager.MCPManager**
+  Custom project logic for analyzing repository files and documentation. *This is a critical dependency for repository-specific intelligence.*
+
+- **Pydantic, Standard Library Imports**
+  Used for type validation and basic IO/OS operations.
+
+### What Depends on This File
+
+- Any process that wants to deploy a documentation-aware MCP server as a back-end service, typically invoked via CLI or as a subprocess in an IDE or intelligent code analysis tool.
 
 ---
 
 ## Usage Examples
 
-### Running the server
+### As a Standalone Server
 
 ```bash
-python mcp_server.py /path/to/your/repo
+python mcp_server.py /path/to/repo
 ```
-or set via environment variable:
+or (with default to current directory):
+
 ```bash
-export DOCUMENTATION_REPO_PATH=/path/to/your/repo
 python mcp_server.py
 ```
+or (with environment variable):
 
-### As a MCP Client
-
-Send a tool invocation matching the registered schemas, for example:
-
-#### 1. Find relevant files
-
-```json
-{
-  "tool": "get_relevant_files",
-  "arguments": {
-    "description": "files handling OAuth login"
-  }
-}
+```bash
+DOCUMENTATION_REPO_PATH=/path/to/repo python mcp_server.py
 ```
 
-**Response Example:**
-```json
-{
-  "query_description": "files handling OAuth login",
-  "relevant_files": [
+### As an MCP Tool Provider
+
+The server is intended for use by MCP protocol clients. They will:
+
+1. **Ask for available tools**
+
+    ```json
+    { "jsonrpc": "2.0", "method": "MCP.listTools", "params": null, "id": 1 }
+    ```
+
+2. **Invoke a Tool, e.g., `get_relevant_files`**
+
+    ```json
     {
-      "file_path": "auth/oauth_backend.py",
-      "summary": "Handles OAuth callbacks.",
-      "relevance_score": 0.95,
-      "reasoning": "File imports OAuth client and manages login flows."
+      "jsonrpc": "2.0",
+      "method": "MCP.callTool",
+      "params": {
+        "name": "get_relevant_files",
+        "arguments": { "description": "code that handles authentication" }
+      },
+      "id": 2
     }
-    // ...
-  ],
-  "total_files_analyzed": 240,
-  "processing_time_seconds": 2.1
-}
-```
+    ```
 
-#### 2. Understand a feature
-
-```json
-{
-  "tool": "understand_feature",
-  "arguments": {
-    "feature_description": "user registration system"
-  }
-}
-```
-
-**Response Example:**
-```json
-{
-  "feature_description": "user registration system",
-  "comprehensive_answer": "The user registration system handles ...",
-  "key_components": [
-    "auth/routes/signup.py", "auth/models/user.py"
-  ],
-  "implementation_details": "Implements email confirmation, stores user in database ...",
-  "usage_examples": [
-    "POST /api/register with payload { ... }"
-  ],
-  "related_concepts": [
-    "authentication", "email service"
-  ],
-  "source_documentation_files": [
-    "docs/authentication.md"
-  ]
-}
-```
-
-### Extending Functionality
-
-You may add new tools by:
-- Adding definitions to the `handle_list_tools` handler.
-- Extending dispatching in `handle_tool_call`.
+3. **Parse the textual JSON response for results.**
 
 ---
 
-## Summary
+## Example Tool Usage (Pseudo-Python)
 
-**mcp_server.py** is a flexible, stdio-based server for advanced documentation interaction and repository analysis. It provides a plug-and-play interface for developer tools requiring sophisticated codebase query and documentation understanding capabilities. Tooling is easily extensible, and all business logic routing is delegated to the pluggable `MCPManager` class.
+```python
+import asyncio
+from mcp.types import Tool
+
+# Assume we have a running server process...
+
+async def get_files(server_client, description):
+    response = await server_client.call_tool(
+        name="get_relevant_files",
+        arguments={"description": description}
+    )
+    # returns JSON-encoded string in response[0].text
+
+asyncio.run(get_files(server_client, "files that process image uploads"))
+```
+
+---
+
+## Notes
+
+- The logic for actual code and documentation analysis is delegated to `MCPManager`, which must be implemented in `src/mcp_manager.py`.
+- Debug logging is verbose and always written to `/tmp/mcp_debug.log`.
+- This file is designed to be invoked directly (`if __name__ == "__main__":`) and run its event loop.
+
+---
+
+## See Also
+
+- [`src/mcp_manager.py`](src/mcp_manager.py): Implementation of repository analysis logic used by this server.
+- [MCP Protocol Documentation](https://github.com/mcp-protocol/spec): Underlying protocol standard implemented here.
+
+---
 
 ---
 <!-- GENERATION METADATA -->
 ```yaml
 # Documentation Generation Metadata
-file_hash: a5b95495382459789c2ed10654d9d08a22dbf5dfc94ca306676c870880571244
+file_hash: cf058927afa1ed3fa24bc8ee42eca7b656ab84df23152871e3d3025e4e017ced
 relative_path: mcp_server.py
-generation_date: 2025-06-30T00:03:27.800471
+generation_date: 2025-07-01T22:12:53.795200
 ```
 <!-- END GENERATION METADATA -->

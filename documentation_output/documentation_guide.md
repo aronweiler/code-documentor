@@ -6,32 +6,24 @@
 This guide provides an overview of all generated documentation files in this repository.
 Use this guide to quickly locate relevant documentation when working on specific features or components.
 
-**Generated on:** 2025-06-30T02:49:21.345520  
-**Total documented files:** 34
+**Generated on:** 2025-07-01T23:06:34.897376  
+**Total documented files:** 31
 
 ## Documentation Files
+
+### .vscode\launch.json
+
+**Documentation:** `.vscode\launch_documentation.md`
+
+**Summary:** The .vscode/launch.json file provides Visual Studio Code launch configurations tailored for automating documentation-related tasks with the project's main.py toolkit. It defines multiple debug/run profiles for generating file-level docs, guides, design docs, performing cleanup, repository analysis, and configuration validation—all directly from the VS Code interface. Each profile specifies program arguments, environment variables (notably setting PYTHONPATH), and supports platform-specific settings to streamline and standardize documentation generation workflows for developers. This setup ensures quick, consistent, and environment-aware execution of complex documentation tasks within the IDE.
+
+---
 
 ### config.yaml
 
 **Documentation:** `config_documentation.md`
 
-**Summary:** config.yaml is the central configuration file for an AI-driven documentation pipeline, defining all operational parameters, model settings, file processing rules, output formats, and documentation templates. It controls aspects such as AI model/provider selection, token management, file inclusion/exclusion, output formatting (with options like Markdown and side-by-side code/docs), retry and error handling policies, and template structures for various documentation types. This file ensures consistency, scalability, and customization across automated documentation generation workflows. It is essential for guiding how the pipeline processes source files and generates high-quality, customizable documentation outputs.
-
----
-
-### install.sh
-
-**Documentation:** `install_documentation.md`
-
-**Summary:** The install.sh script automates the environment setup for the Documentation Pipeline project on Mac and Linux by checking for Python 3, creating a virtual environment, installing dependencies from requirements.txt, and preparing environment configuration files. Key functionalities include virtual environment management, Python dependency installation, and automated setup of the .env file for local configuration. This ensures a consistent and reliable development environment for all contributors and users.
-
----
-
-### main.py
-
-**Documentation:** `main_documentation.md`
-
-**Summary:** main.py serves as the primary command-line interface (CLI) entry point for a tool that generates, analyzes, and validates documentation for code repositories. It parses command-line arguments, supports subcommands (generate, analyze, validate-config), and triggers the appropriate pipeline for each operation. Key components include argument parsing functions, handlers for each operation (documentation generation, repository analysis, config validation), and integration with modules such as DocumentationPipeline, ConfigManager, and CodeAnalyzer. The script handles user interaction, error reporting, and provides usage examples for flexible, user-friendly operation.
+**Summary:** The 'config.yaml' file serves as the central configuration for an AI-driven documentation generation pipeline, controlling all aspects of model invocation, file selection, processing, output formatting, template management, and robustness features. Key components include settings for LLM provider/model (OpenAI, Anthropic, Azure), token and context limits, file inclusion/exclusion rules, output format options, customizable documentation templates, and retry/continuation logic for handling failures. This file enables maintainers to fully customize and extend the documentation workflow without changing the codebase. It is essential for tailoring the documentation generator and related tools to specific project, workflow, or organizational requirements.
 
 ---
 
@@ -39,247 +31,231 @@ Use this guide to quickly locate relevant documentation when working on specific
 
 **Documentation:** `mcp_server_documentation.md`
 
-**Summary:** mcp_server.py implements a stdio-based MCP (Machine Communication Protocol) server for intelligent querying, searching, and understanding of repository documentation. Its core functionality includes two main endpoints: one to retrieve relevant files based on natural language descriptions, and another to generate structured summaries explaining specific features. The server delegates business logic to the MCPManager class, making it extensible for integration with developer tools, documentation assistants, or code analysis pipelines. Extensive logging and schema-driven tool handling are provided for robust and extensible operations.
+**Summary:** mcp_server.py implements a backend MCP Server that provides tools for interacting with and analyzing repository documentation. Its key features include retrieving relevant source files based on natural language descriptions and synthesizing detailed documentation for specific project features. The server exposes these functionalities via the MCP protocol, delegating analysis tasks to an MCPManager component, and is intended for use as a backend service in development or IDE environments. It includes robust logging and is primarily designed for integration with client tools needing repository documentation insights.
 
 ---
 
-### mcp_server_http.py
+### src\context_manager.py
 
-**Documentation:** `mcp_server_http_documentation.md`
+**Documentation:** `src\context_manager_documentation.md`
 
-**Summary:** mcp_server_http.py provides an HTTP (FastAPI-based) and optional stdio server interface to a Machine Control Protocol (MCP) backend for repository documentation and code navigation. Its primary functions include allowing users or tools to find relevant files based on natural language queries and to understand or summarize code features via a web API or direct process communication. Key components include the DocumentationMCPServer for initializing tools and the HTTPMCPWrapper for publishing FastAPI endpoints, with core logic powered by an MCPManager. This makes it suitable for integration with editors, automation scripts, or web UIs for code search and documentation workflows.
-
----
-
-### .vscode/launch.json
-
-**Documentation:** `.vscode/launch_documentation.md`
-
-**Summary:** The .vscode/launch.json file defines launch and debug configurations for running common Python-based tasks—such as generating documentation, analyzing repositories, and validating configurations—in Visual Studio Code. Each profile specifies command-line arguments, environment settings, and working directories for executing main.py with different commands (e.g., generate, analyze, validate-config). This setup streamlines development workflows by making these tasks easily accessible in VSCode’s Run and Debug interface. The configurations depend on Python, debugpy, and a project-specific main.py script.
+**Summary:** The src\context_manager.py file provides the ContextManager class, which serves to manage, summarize, and enrich documentation context within an LLM-driven documentation generation pipeline. Key functions include loading and formatting documentation guides, summarizing large documentation sources using a language model, and combining these elements to create context-aware documentation artifacts. The class integrates with the pipeline’s state, document processing utilities, and language model, supporting efficient downstream tasks such as design document generation. It relies on supporting data models and manages interaction with the filesystem and logging for diagnostics.
 
 ---
 
-### .vscode/settings.json
+### src\document_processor.py
 
-**Documentation:** `.vscode/settings_documentation.md`
+**Documentation:** `src\document_processor_documentation.md`
 
-**Summary:** The .vscode/settings.json file configures project-specific settings for Visual Studio Code, primarily specifying the use of a local Python virtual environment as the default interpreter for all Python-related tooling. It also defines a custom "documentation-server" command under the mcp.servers configuration, enabling easy launch of a documentation server script within the workspace. These settings ensure consistent development environments and streamlined integration of custom server tasks for all contributors opening the project in VS Code.
-
----
-
-### .vscode/tasks.json
-
-**Documentation:** `.vscode/tasks_documentation.md`
-
-**Summary:** The .vscode/tasks.json file defines reusable Visual Studio Code tasks for automating common development workflows in a Python project that uses a virtual environment. It primarily provides tasks to start a local documentation server and install project dependencies via commands executed in the venv. Key components include task configuration such as command paths, arguments, output display, grouping, and working directory. This setup streamlines running and managing these tasks directly within VS Code, assuming the presence of required scripts and the virtual environment.
+**Summary:** The src\document_processor.py file provides the DocumentProcessor class and support tools for loading, aggregating, token counting, chunking, and preparing textual documentation for use in AI-driven pipelines. It can handle various documentation formats, determine if content needs summarization based on configurable token thresholds, and split large docs into size-limited chunks. Key dependencies include tiktoken for tokenization and LangChain’s text splitter for chunking. This module is essential for preprocessing, context creation, and managing documentation size for downstream language model tasks.
 
 ---
 
-### src/code_analyzer.py
+### src\file_processor.py
 
-**Documentation:** `src/code_analyzer_documentation.md`
+**Documentation:** `src\file_processor_documentation.md`
 
-**Summary:** code_analyzer.py provides core functionality to scan and analyze code repositories, focusing on discovering, robustly reading, and summarizing code files based on configurable inclusion/exclusion criteria. The main component, the CodeAnalyzer class, filters files by extension and pattern, reads contents with encoding fallback, and generates structural statistics like file counts and largest files. It leverages imported CodeFile and PipelineConfig data structures to manage file metadata and processing rules. The module is intended for integration into documentation pipelines or tools needing detailed codebase analysis.
-
----
-
-### src/config.py
-
-**Documentation:** `src/config_documentation.md`
-
-**Summary:** The src/config.py file centralizes configuration management for the project by loading settings from a YAML file and managing sensitive credentials using environment variables from a .env file. Its core component, the ConfigManager class, parses pipeline settings, securely retrieves API keys for supported providers (such as OpenAI, Anthropic, and Azure OpenAI), and merges static and dynamic configuration data for use throughout the application. This approach separates configuration from code for better maintainability and ensures that all runtime settings and secrets are accessed securely and consistently. The module relies on external packages like PyYAML and python-dotenv, and depends on a PipelineConfig data model defined elsewhere in the project.
+**Summary:** The src/file_processor.py module manages source code file handling within a documentation generation pipeline. It provides a FileProcessor class that detects when documentation should be regenerated, processes and saves generated documentation (including metadata and optional code snippets), computes file hashes for change detection, and organizes output directory structures. Core components include support for robust file I/O, error handling, configuration-driven options, and integration with pipeline data models and tooling. This module serves as the central point for all file-specific logic related to generating and managing documentation output.
 
 ---
 
-### src/context_manager.py
+### src\guide_generator.py
 
-**Documentation:** `src/context_manager_documentation.md`
+**Documentation:** `src\guide_generator_documentation.md`
 
-**Summary:** The src/context_manager.py file provides the ContextManager class, which manages documentation context for a documentation generation pipeline. Its primary functions include loading and enhancing documentation with optional guides, summarizing large documents using a large language model (LLM), and ensuring context is accurate and usable for subsequent pipeline stages. Key components involve integrating document processing utilities, LLM invocation, prompt handling, and supporting various context formats for downstream tasks. This module is essential for pipelines needing context-aware, efficiently summarized, and enhanced documentation inputs.
-
----
-
-### src/design_document_generator.py
-
-**Documentation:** `src/design_document_generator_documentation.md`
-
-**Summary:** The file src/design_document_generator.py provides the core logic for automated generation of structured design documents using a Large Language Model (LLM). Its main component, the DesignDocumentGenerator class, manages the full workflow: planning which documents and sections to generate, creating section content (handling truncation and retries), assembling completed documents, and persisting results as Markdown files. The module supports integration into larger documentation pipelines and relies on project-specific models, prompts, and utilities for state management and LLM interaction. It enables iterative, context-aware creation and updating of design documentation, supporting both granular section management and final document assembly.
+**Summary:** The src\guide_generator.py module automates the aggregation, summarization, and maintenance of a centralized Documentation Guide for large code repositories. Its core GuideGenerator class loads existing documentation, generates or incrementally updates a Markdown guide by detecting code changes, and produces concise, LLM-powered summaries of each documented file. It integrates with both OpenAI and Anthropic models, efficiently manages metadata, and supports workflows requiring full or incremental guide regeneration. Key dependencies include internal models, a document processor, a metadata manager, and third-party LLM libraries.
 
 ---
 
-### src/document_processor.py
+### src\guide_metadata_manager.py
 
-**Documentation:** `src/document_processor_documentation.md`
+**Documentation:** `src\guide_metadata_manager_documentation.md`
 
-**Summary:** The file document_processor.py provides a utility class, DocumentProcessor, for loading, processing, and preparing documentation files for use in large language model (LLM) pipelines. Its core functions include robustly reading and concatenating documentation from various formats, counting tokens using GPT-4's tokenizer, determining if summarization is needed based on configurable thresholds, and chunking large documents into LLM-friendly segments. The module relies on external libraries such as tiktoken (for token counting) and langchain (for text splitting), and outputs content structured for efficient downstream usage. It is designed for integration as an early step in documentation generation or analysis pipelines that must handle input size limits.
-
----
-
-### src/file_processor.py
-
-**Documentation:** `src/file_processor_documentation.md`
-
-**Summary:** The file_processor.py module provides core logic for managing source code file processing within a documentation generation pipeline. Its primary functions include detecting file changes using hashes, managing output directory structures, and saving generated documentation—complete with metadata and, optionally, source code. The central FileProcessor class offers methods for determining when to regenerate documentation, computing file hashes, and handling robust file and directory operations. This module is essential for keeping generated documentation synchronized with source code changes in an automated system.
+**Summary:** The src\guide_metadata_manager.py file defines the GuideMetadataManager class, which manages metadata for the incremental generation of documentation guides in a codebase. Its primary functions include detecting file changes, persisting metadata, and determining which source files require documentation updates, thereby enabling efficient incremental builds. Key components involve file and guide metadata management, change detection logic, and APIs for coordinating state across documentation runs. The class interacts with various data models and is intended for use within a larger documentation generation pipeline.
 
 ---
 
-### src/guide_generator.py
+### src\llm_manager.py
 
-**Documentation:** `src/guide_generator_documentation.md`
+**Documentation:** `src\llm_manager_documentation.md`
 
-**Summary:** The src/guide_generator.py module orchestrates the generation, updating, and summarization of a project-level documentation guide by compiling per-file documentation into a comprehensive, indexed Markdown guide. It leverages LLMs to create summaries, supports both full and incremental updates in response to codebase changes, and maintains metadata about documentation coverage and changes. The core GuideGenerator class handles loading documentation, summarizing content, detecting changes, and managing guide entries, with robust error handling and extensibility for different LLM backends. This module integrates with supporting data models, document processing utilities, and metadata managers within a larger documentation pipeline.
-
----
-
-### src/guide_metadata_manager.py
-
-**Documentation:** `src/guide_metadata_manager_documentation.md`
-
-**Summary:** The src/guide_metadata_manager.py file provides the GuideMetadataManager class, which manages metadata for incremental documentation and guide generation in source code repositories. Its main functions include tracking file metadata, detecting changes (new, modified, deleted files), and supporting efficient incremental or full documentation rebuilds. It offers serialization/deserialization for metadata persistence, change detection logic, and integrates with a broader documentation pipeline using supporting data classes like GuideMetadata and ChangeSet. This module is foundational for enabling scalable, selective documentation updates rather than costly full regenerations.
+**Summary:** The src\llm_manager.py module provides a unified interface for initializing and configuring language models (LLMs) from OpenAI or Anthropic using the LangChain library. Its main component, the LLMManager class, retrieves settings from an external configuration manager, handles provider selection, manages API keys, and returns a ready-to-use LangChain chat model instance. This abstraction allows seamless switching and integration of different LLM providers within an application.
 
 ---
 
-### src/llm_manager.py
+### src\mcp_manager.py
 
-**Documentation:** `src/llm_manager_documentation.md`
+**Documentation:** `src\mcp_manager_documentation.md`
 
-**Summary:** The `src/llm_manager.py` module provides the `LLMManager` class, which abstracts and configures Large Language Model (LLM) clients (OpenAI or Anthropic) using LangChain integrations, based on external configuration or environment variables. It handles provider selection, credential management, and instantiates the appropriate client (`ChatOpenAI` or `ChatAnthropic`). The main functionality enables other application components to easily obtain a ready-to-use, properly configured LLM client for inference or chat tasks, without managing provider-specific details.
-
----
-
-### src/mcp_manager.py
-
-**Documentation:** `src/mcp_manager_documentation.md`
-
-**Summary:** The `src/mcp_manager.py` file provides the `MCPManager` class, which orchestrates high-level Model Context Protocol (MCP) workflows for codebase analysis using LangGraph and LLMs. Its primary functions are locating source code files relevant to a specific query and synthesizing comprehensive project feature summaries from documentation. Key components include workflow assembly (with various node functions for document loading, LLM querying, and result formatting), async public methods (`find_relevant_files`, `understand_feature`), and robust integration with config, LLM, and prompt management. This module serves as the central service for advanced, context-aware code and documentation exploration in user-facing APIs, CLIs, or tools.
+**Summary:** The src\mcp_manager.py file defines the MCPManager class, which provides high-level APIs for intelligent code and documentation exploration using LangGraph workflows orchestrated with LLMs. Its core functions include finding relevant code files for a user query and synthesizing feature explanations from project documentation. Key components are two primary async methods (`find_relevant_files` and `understand_feature`), workflow node functions for LLM interaction and file processing, integration with configuration and prompt management, and use of structured data models for results. This module serves as a central workflow engine for automating code reasoning and feature understanding tasks in larger applications.
 
 ---
 
-### src/mcp_models.py
+### src\mcp_models.py
 
-**Documentation:** `src/mcp_models_documentation.md`
+**Documentation:** `src\mcp_models_documentation.md`
 
-**Summary:** The file src/mcp_models.py defines core Pydantic data models that structure and validate the requests, responses, and workflow state for an MCP (Model Context Protocol) server. It provides schemas essential for searching relevant files, feature understanding, handling documentation files, and managing workflow integration (e.g., with LangGraph). Key components include models for relevant file search requests/responses, feature understanding, documentation file representation, and a comprehensive state object for orchestrating MCP operations. These models serve as the backbone for any server or workflow that requires structured data exchange and workflow management related to MCP functionalities.
-
----
-
-### src/models.py
-
-**Documentation:** `src/models_documentation.md`
-
-**Summary:** The file src/models.py defines core Pydantic data models used throughout a documentation generation pipeline, providing validated structures for configuration, request/response handling, state tracking, and documentation outputs. Key components include configuration and request models, representations for code files and documentation, guide and design document structures, and mechanisms for incremental processing and overall pipeline state. These models serve as type-safe, serializable building blocks enabling consistent data exchange and validation across all parts of the system. No business logic is implemented—only structured data definitions supporting the documentation workflow.
+**Summary:** The src/mcp_models.py file defines core Pydantic data models for the MCP server, which programmatically analyzes source code repositories and documents features using language models. It includes models for representing requests and responses related to relevant file discovery, in-depth feature understanding, workflow state tracking, documentation file handling, and error management. These models enable type-safe, validated communication between MCP API endpoints, workflow engines, and LLM integrations. The code is essential for structuring and orchestrating the analysis and documentation workflow within applications interacting with code repositories.
 
 ---
 
-### src/pipeline.py
+### src\models.py
 
-**Documentation:** `src/pipeline_documentation.md`
+**Documentation:** `src\models_documentation.md`
 
-**Summary:** The src/pipeline.py file provides an automated pipeline for generating and updating documentation for code repositories. Its main class, DocumentationPipeline, uses a modular, stateful workflow (via LangGraph) to scan source code, generate per-file documentation with an LLM, assemble documentation guides and design documents, manage pipeline state, and orchestrate interactions between various supporting components (like configuration, code analysis, and reporting). The pipeline supports incremental updates and can be integrated programmatically to streamline documentation tasks and improve project maintainability. Key data models and managers abstract state, configuration, LLM interactions, and file processing.
-
----
-
-### src/report_generator.py
-
-**Documentation:** `src/report_generator_documentation.md`
-
-**Summary:** The src/report_generator.py module provides the central reporting and output logic for a documentation generation pipeline. Its main class, ReportGenerator, handles saving results, generating Markdown summary reports, and reporting on both file-level and design-level documentation statuses. Key features include configurable output handling, detailed statistics, and breakdowns of design documentation outcomes, enabling users and developers to quickly assess overall pipeline results and areas needing attention. This module is typically invoked at the conclusion of a pipeline run to finalize and summarize documentation generation.
+**Summary:** The src/models.py file defines Pydantic-based data models and schemas that structure and validate all major configuration, state, request, input, output, and metadata objects for the documentation generation toolkit. It provides type-safe, serializable contracts for orchestrating complex documentation workflows—including file-level, guide, design document, and incremental generation features—through models like PipelineConfig, DocumentationRequest, CodeFile, DocumentationResult, DocumentationGuide, DesignDocument, PipelineState, and related metadata/state classes. This module serves as the backbone for input validation, workflow state tracking, and inter-component data sharing throughout the toolkit's processing and orchestration layers. All main components and pipelines in the toolkit depend on these models for reliable, reproducible, and extensible documentation processes.
 
 ---
 
-### src/state_manager.py
+### src\pipeline.py
 
-**Documentation:** `src/state_manager_documentation.md`
+**Documentation:** `src\pipeline_documentation.md`
 
-**Summary:** The src/state_manager.py file defines the StateManager class, which centralizes the decision-making logic for managing state transitions in a documentation generation pipeline. It uses the current pipeline state (PipelineState) and a doc processor to determine which workflow steps to execute next—such as loading existing docs, summarizing, generating file or design docs, and progressing through files or sections. Core methods enable orchestration of conditional progression through the pipeline, providing a stateless, modular controller to support complex documentation workflows. This module is intended to be used by higher-level orchestration code to streamline and clarify pipeline management.
-
----
-
-### src/prompts/ai_assembly_system_message.py
-
-**Documentation:** `src/prompts/ai_assembly_system_message_documentation.md`
-
-**Summary:** This file defines the AI system prompt used to instruct language models on assembling a coherent, unified document from multiple sections. The core component is the AI_ASSEMBLY_SYSTEM_MESSAGE string, which outlines requirements such as generating a title/introduction, adding transitions and connecting text, ensuring consistent tone, and concluding the document. It is intended for use in LLM-powered workflows that require automated document assembly, with no external dependencies. This prompt standardizes guidance for creating professional, well-structured documents via AI.
+**Summary:** The src/pipeline.py file implements the main orchestrator for an automated, LLM-powered documentation pipeline for software repositories, coordinating tasks such as codebase scanning, documentation summarization, and generation of new documentation artifacts. Its core component is the DocumentationPipeline class, which defines a modular, stateful LangGraph-based workflow, manages pipeline state and transitions, and delegates processing to specialized manager components. The pipeline supports incremental processing, conditional branching, robust error handling, and extensive configurability, serving as the entry point for end-to-end documentation generation invoked by external interfaces like CLI tools. Key dependencies include LangGraph for workflow, LangChain for LLM integration, and various domain-specific managers for document, design, and guide generation.
 
 ---
 
-### src/prompts/continue_truncated_content_system_prompt.py
+### src\prompts\ai_assembly_system_message.py
 
-**Documentation:** `src/prompts/continue_truncated_content_system_prompt_documentation.md`
+**Documentation:** `src\prompts\ai_assembly_system_message_documentation.md`
 
-**Summary:** This file provides a multi-line string template, CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT, designed as a system prompt for AI-driven documentation tools to seamlessly continue writing truncated documentation sections. The template includes placeholders for document name, section, context, instructions, and specific continuation prompts, and informs the AI about helper functions for accessing additional file and directory content. The file contains no executable code or logic, serving solely as a reusable prompt template for integration into documentation automation workflows.
-
----
-
-### src/prompts/generate_doc_summary_system_message.py
-
-**Documentation:** `src/prompts/generate_doc_summary_system_message_documentation.md`
-
-**Summary:** This file provides a single string constant, GENERATE_DOC_SUMMARY_SYSTEM_MESSAGE, containing explicit instructions for AI models to generate concise, 2-4 sentence summaries of technical documentation. Its primary function is to guide the AI to focus on a code file’s main purpose and key components, while ignoring formatting or style. The file is fully self-contained and designed to be imported as a system message prompt for AI-powered summarization tasks. It serves as a template rather than containing any executable logic.
+**Summary:** The src\prompts\ai_assembly_system_message.py file provides a formatted system prompt template, AI_ASSEMBLY_SYSTEM_MESSAGE, designed to guide AI agents in assembling multiple document sections into a coherent, stylistically consistent whole. Its key function is to ensure the AI creates a unified title, introduction, smooth transitions, appropriate connective text, and a conclusion, rather than simply merging sections. The file is self-contained with no external dependencies and is typically used by components interfacing with AI models for automated document generation.
 
 ---
 
-### src/prompts/generate_file_documentation_system_message.py
+### src\prompts\continue_truncated_content_system_prompt.py
 
-**Documentation:** `src/prompts/generate_file_documentation_system_message_documentation.md`
+**Documentation:** `src\prompts\continue_truncated_content_system_prompt_documentation.md`
 
-**Summary:** This file provides a template string, GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE, designed as a system prompt for AI-based code documentation generators. It includes placeholders for project context and file metadata to produce consistent, well-structured Markdown documentation covering purpose, functionality, key components, dependencies, and usage examples for a given code file. The template is intended to be imported and dynamically filled elsewhere in the project to guide automated documentation creation. No external dependencies are required.
-
----
-
-### src/prompts/mcp_file_relevance_prompt.py
-
-**Documentation:** `src/prompts/mcp_file_relevance_prompt_documentation.md`
-
-**Summary:** This file defines three system prompt templates used to guide large language models (LLMs) within the Modular Code Platform (MCP) for automated codebase and documentation analysis. The key components—MCP_FILE_RELEVANCE_SYSTEM_PROMPT, MCP_FEATURE_DISCOVERY_SYSTEM_PROMPT, and MCP_FEATURE_SYNTHESIS_SYSTEM_PROMPT—enable LLMs to determine relevant source code files, locate documentation for specific features, and synthesize comprehensive feature explanations from multiple docs, respectively. Each prompt enforces strict output formatting to enable reliable downstream parsing. The module contains only these string constants and is designed to be imported as prompt context for LLM invocations supporting code understanding and documentation navigation tasks.
+**Summary:** The file defines CONTINUE_TRUNCATED_CONTENT_SYSTEM_PROMPT, a multi-line string template used to guide AI agents in continuing previously truncated documentation sections within automated documentation generation or augmentation systems. The template incorporates variables for document name, section name, context, section instructions, and specific continuation cues, and informs the agent about file-reading tools available for further information retrieval. It does not execute logic or import modules; instead, it serves as a static prompt resource to be filled and dispatched by other components in an LLM-powered documentation workflow. This makes the file essential for ensuring consistent, context-aware continuation of incomplete documentation by AI assistants.
 
 ---
 
-### src/prompts/section_prompt_system_message.py
+### src\prompts\generate_doc_summary_system_message.py
 
-**Documentation:** `src/prompts/section_prompt_system_message_documentation.md`
+**Documentation:** `src\prompts\generate_doc_summary_system_message_documentation.md`
 
-**Summary:** The file defines a system message prompt template (SECTION_PROMPT_SYSTEM_MESSAGE) intended for use by AI-driven documentation generation tools. Its primary function is to guide the AI in producing accurate, structured documentation sections by instructing it to explore and understand the codebase using available file and directory exploration tools. The template is a formatted string with placeholders for document and section names, context, and instructions, and is used programmatically in documentation workflows to standardize prompts for AI agents. It contains no runtime dependencies and serves as a key component in aligning AI-generated documentation with project best practices.
-
----
-
-### src/prompts/summarize_docs_system_message.py
-
-**Documentation:** `src/prompts/summarize_docs_system_message_documentation.md`
-
-**Summary:** This file provides a specialized system prompt template (SUMMARIZE_DOCS_SYSTEM_MESSAGE) for guiding AI language models to summarize technical documentation chunks while preserving key concepts, architectural decisions, implementation details, and dependencies. The constant is intended for use in AI-powered documentation summarization workflows, ensuring summaries are both concise and technically comprehensive. It contains no external dependencies and is meant to be integrated into larger LLM-based systems or tools requiring consistent and high-quality technical documentation summaries.
+**Summary:** This file defines the GENERATE_DOC_SUMMARY_SYSTEM_MESSAGE constant, a prompt template designed for instructing AI models to generate concise, 2-4 sentence summaries of technical documentation. Its primary function is to standardize summary outputs by focusing on the main purpose and key components of a codebase or file. The file contains no dependencies and serves as a reusable configuration asset for LLM-powered summarization workflows.
 
 ---
 
-### src/tools/file_tools.py
+### src\prompts\generate_file_documentation_system_message.py
 
-**Documentation:** `src/tools/file_tools_documentation.md`
+**Documentation:** `src\prompts\generate_file_documentation_system_message_documentation.md`
 
-**Summary:** The src/tools/file_tools.py module provides secure and convenient functions for reading file contents, listing and searching for files, and retrieving file metadata, all restricted to stay within a specified repository boundary. Key functionalities include reading files with robust encoding handling, listing files with extension and recursive options, pattern-based file searching, and gathering file metadata, with all operations ensuring paths do not escape the repository. Core components rely on pathlib for path management and enforce security checks on every access. This module is self-contained and suitable for any tool or script that requires controlled and safe file system operations within a project.
-
----
-
-### src/utilities/token_manager.py
-
-**Documentation:** `src/utilities/token_manager_documentation.md`
-
-**Summary:** The src/utilities/token_manager.py module provides utilities for managing and estimating token usage with Large Language Models (LLMs), particularly those from OpenAI like GPT-4 and GPT-3.5. Its core TokenCounter class enables precise token counting for texts and multi-message chat conversations according to model-specific encodings, handles unknown models with graceful fallbacks, and supports budgeting and prompt size optimization. Key functions include count_tokens for text, estimate_tokens_for_messages for conversation threads, and internal handling of encoding mappings via the tiktoken library. This utility is essential for any application interacting with OpenAI APIs where token limits and usage control are important.
+**Summary:** This file provides a reusable string template, GENERATED_FILE_DOCUMENTATION_SYSTEM_MESSAGE, designed to standardize and automate the generation of Python file documentation by AI agents or documentation tools. The template accepts project context, file extension, and file path as input, and instructs the agent to generate Markdown-formatted documentation sections such as Purpose, Functionality, Components, Dependencies, and Usage Examples. It is typically used within AI-driven documentation pipelines that generate system prompts for codebase documentation tasks.
 
 ---
 
-### src/tools/lc_tools/lc_file_tools.py
+### src\prompts\mcp_file_relevance_prompt.py
 
-**Documentation:** `src/tools/lc_tools/lc_file_tools_documentation.md`
+**Documentation:** `src\prompts\mcp_file_relevance_prompt_documentation.md`
 
-**Summary:** The file defines a factory function, `create_file_tools`, which generates a set of LangChain Tool objects for performing safe and controlled file operations within a specified repository. It provides tools for reading file contents, listing and searching files, and retrieving file metadata, each exposed via a standardized interface for use by language model agents. These tools leverage underlying utility functions and are designed for agent-driven tasks such as code analysis or automation, with robust input handling and user-friendly error reporting. The module is primarily intended for integration with LangChain agents needing repository-level file access.
+**Summary:** The src/prompts/mcp_file_relevance_prompt.py file defines three specialized system prompt templates as string constants for use with Large Language Models (LLMs) in code and documentation analysis tasks. These prompts enable LLMs to (1) identify relevant source code files for a user query, (2) discover documentation files related to specific features, and (3) synthesize structured, comprehensive feature overviews from multiple documentation sources. The file serves as a centralized resource for prompt injection in developer tools, documentation assistants, or code analysis pipelines, ensuring consistent, context-aware outputs. It does not contain any dependencies or executable logic beyond the prompt definitions.
 
 ---
 
-### documentation_output/.documentation_state/guide_metadata.json
+### src\prompts\section_prompt_system_message.py
 
-**Documentation:** `documentation_output/.documentation_state/guide_metadata_documentation.md`
+**Documentation:** `src\prompts\section_prompt_system_message_documentation.md`
 
-**Summary:** The guide_metadata.json file is a machine-generated metadata registry used by the project's documentation generation system to track and manage the state of documentation for each source file. It records details like file paths, modification and generation timestamps, hashes, and schema versioning, enabling incremental documentation updates and consistent integrity checks. Key components include global guide metadata and a tracked_files mapping that links source files to their documentation status. This file is read and updated exclusively by documentation tools to automate the detection of changes and control documentation regeneration.
+**Summary:** This file defines SECTION_PROMPT_SYSTEM_MESSAGE, a parameterized string template used as a system prompt for AI-based technical documentation generation. It instructs the AI on how to utilize available codebase exploration tools and contextual information to create detailed documentation sections within a design document. The template is designed to be dynamically filled with document-specific details and is intended for integration into larger documentation automation workflows, ensuring consistency and reusability.
+
+---
+
+### src\prompts\summarize_docs_system_message.py
+
+**Documentation:** `src\prompts\summarize_docs_system_message_documentation.md`
+
+**Summary:** The file src/prompts/summarize_docs_system_message.py defines a string variable containing detailed system-level instructions for AI models to use when summarizing technical documentation. Its main function is to guide summarization engines to produce concise but comprehensive summaries, preserving key technical concepts, architectural decisions, and dependencies. The file is dependency-free and is intended to be imported by AI-driven tools or scripts that require standardized, high-quality summarization prompts for technical contexts.
+
+---
+
+### src\report_generator.py
+
+**Documentation:** `src\report_generator_documentation.md`
+
+**Summary:** The src\report_generator.py file defines the ReportGenerator class, which generates summary reports and tracks the status of file and design documentation runs within a documentation pipeline. Its key functions include saving documentation outputs, assembling comprehensive Markdown reports (detailing successes, failures, and skips), and providing detailed status updates for design documentation generation. The module interfaces with PipelineState and a file processor to collate process outcomes, prints summaries to the console, and writes a final Markdown report to the output directory. It is intended to be used as the final reporting step in an automated documentation workflow.
+
+---
+
+### src\state_manager.py
+
+**Documentation:** `src\state_manager_documentation.md`
+
+**Summary:** The src/state_manager.py file provides centralized management of state transitions and branching logic within a documentation generation pipeline. Its main component, the StateManager class, determines when to load existing docs, summarize content, generate documentation, and handle iteration over files, documents, and sections, using the current pipeline state and external processors. The module ensures maintainable and consistent flow control and is designed to be used by higher-level pipeline controllers orchestrating the documentation workflow. Key dependencies include typing support, a PipelineState model, and external processors for summarization decisions.
+
+---
+
+### src\tools\file_tools.py
+
+**Documentation:** `src\tools\file_tools_documentation.md`
+
+**Summary:** The src\tools\file_tools.py module provides utility functions for secure file and directory handling within a repository, ensuring all operations remain inside the project boundaries. Key features include reading file content with encoding support, listing and searching for files by extension or glob pattern, and extracting detailed file metadata—all while enforcing security checks and returning consistent, repository-relative paths. It is especially suited for tools that perform automated code analysis, repository searches, or developer utilities needing safe and flexible access to project files.
+
+---
+
+### src\tools\lc_tools\lc_file_tools.py
+
+**Documentation:** `src\tools\lc_tools\lc_file_tools_documentation.md`
+
+**Summary:** The code in src/tools/lc_tools/lc_file_tools.py provides a factory function, create_file_tools, that generates LangChain-compatible Tool objects for performing file operations within a specific repository path. Key functionalities offered include reading file contents, listing files (with filtering and recursion), searching files by pattern, and retrieving file metadata. These tools expose AI-friendly wrappers around underlying file system functions, handling errors gracefully and making them suitable for integration into LangChain agents or chains. All operations are scoped to the provided repository root, enabling controlled file access for LLM-driven workflows.
+
+---
+
+### src\utilities\token_manager.py
+
+**Documentation:** `src\utilities\token_manager_documentation.md`
+
+**Summary:** The src\utilities\token_manager.py module provides utilities for managing and estimating token usage in applications that interact with Large Language Models (LLMs) like GPT-3.5 or GPT-4. Its core component, the TokenCounter class, counts tokens in texts using model-specific encoders from the tiktoken library, estimates token usage for sequences of chat messages (including structural overhead), and manages model-to-encoder mappings with fallbacks and logging. This enables precise budget tracking and context window management for LLM applications.
+
+---
+
+### .vscode\tasks.json
+
+**Documentation:** `.vscode\tasks_documentation.md`
+
+**Summary:** The .vscode/tasks.json file defines automated VS Code tasks to streamline development workflows for the Documentation MCP Server project. It provides shell-based tasks to start the MCP server using the workspace's Python virtual environment and to install project dependencies from requirements.txt. These tasks facilitate quick server launch and dependency management directly within the VS Code interface, enhancing developer convenience and consistency. The configuration assumes a Windows environment and requires a virtual environment, mcp_server.py, and requirements.txt in the project workspace.
+
+---
+
+### main.py
+
+**Documentation:** `main_documentation.md`
+
+**Summary:** main.py serves as the command-line interface (CLI) entry point for a documentation generation toolkit. It enables users to generate, analyze, and clean up documentation for a source code repository through various subcommands and arguments, including documentation generation, repository analysis, configuration validation, and orphaned documentation cleanup. Key components include the DocumentationPipeline for orchestrating documentation, ConfigManager for configuration handling, and CodeAnalyzer for repository structure analysis. The script emphasizes flexible argument parsing, robust error handling, and ease of use for managing code documentation workflows.
+
+---
+
+### src\config.py
+
+**Documentation:** `src\config_documentation.md`
+
+**Summary:** The src/config.py file provides a centralized configuration manager for the documentation toolkit and MCP server, handling the secure loading and access of settings and sensitive credentials. Its primary component, the ConfigManager class, loads and validates configuration from a YAML file, manages environment variables (including API keys for LLM providers), and supplies aggregated runtime configuration dictionaries for downstream use. Supporting methods include loading and caching config data, secure API key lookup, and constructing LLM provider configuration objects. This module ensures unified, consistent, and secure configuration management across the project.
+
+---
+
+### .vscode\settings.json
+
+**Documentation:** `.vscode\settings_documentation.md`
+
+**Summary:** The .vscode/settings.json file configures project-level settings for Visual Studio Code, focusing on Python development and integrating the MCP (Model Context Protocol) documentation server within the workspace. Key components include specifying the Python interpreter path (typically a project virtual environment) and providing detailed commands for launching and managing the MCP server via the MCP VS Code extension. These settings ensure consistent Python environment usage and enable automated code documentation and analysis directly from VS Code. The configuration relies on a local virtual environment, the mcp_server.py script, and compatible VS Code extensions for full functionality.
+
+---
+
+### src\design_document_generator.py
+
+**Documentation:** `src\design_document_generator_documentation.md`
+
+**Summary:** The src/design_document_generator.py module provides the DesignDocumentGenerator class, which automates the creation of comprehensive, multi-section software design documents using a Large Language Model (LLM) through LangChain. It manages workflow state, context assembly, section-by-section generation (with truncation and error handling), and final Markdown file output, integrating various prompts and tooling to ensure context-aware, high-quality documentation. The generator depends on project-specific configuration and a document processor, outputs documents with metadata, and is designed for seamless integration within an AI-powered documentation pipeline.
+
+---
+
+### src\code_analyzer.py
+
+**Documentation:** `src\code_analyzer_documentation.md`
+
+**Summary:** The src/code_analyzer.py module provides the core functionality for scanning, filtering, and analyzing source code files in a repository to support automated documentation workflows. Its main class, CodeAnalyzer, recursively identifies relevant code files based on configurable inclusion/exclusion rules, robustly reads their contents, and generates structured metadata and summary statistics. Key components include the scan_repository method for collecting code files, helpers for file inclusion logic and robust reading, and utilities for analyzing file structure. Outputs from this module are essential for downstream documentation generators and tooling.
 
 ---
 
